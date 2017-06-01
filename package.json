@@ -1,0 +1,28 @@
+{
+  "name": "feeds-client-js",
+  "description": "Pusher Feeds client library for the web",
+  "main": "target/pusher-feeds.js",
+  "author": "Pusher",
+  "license": "MIT",
+  "homepage": "https://github.com/pusher/pusher-platform-js",
+  "bugs": {
+    "url": "https://github.com/pusher/pusher-platform-js/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pusher/feeds-client-js.git"
+  },
+  "devDependencies": {
+    "ts-loader": "^2.1.0",
+    "typescript": "^2.3.2",
+    "webpack": "^2.5.1"
+  },
+  "scripts": {
+    "build": "rm -rf lib target && node_modules/webpack/bin/webpack.js",
+    "test": "node_modules/webpack/bin/webpack.js --config=webpack.js && node test/test.js "
+  },
+  "version": "0.1.0",
+  "dependencies": {
+    "pusher-platform-js": "../pusher-platform-js"
+  }
+}
