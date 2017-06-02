@@ -4,9 +4,9 @@
 	else if(typeof define === 'function' && define.amd)
 		define([], factory);
 	else if(typeof exports === 'object')
-		exports["PusherFeedsLib"] = factory();
+		exports["PusherFeeds"] = factory();
 	else
-		root["PusherFeedsLib"] = factory();
+		root["PusherFeeds"] = factory();
 })(this, function() {
 return /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
@@ -86,9 +86,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	else if(typeof define === 'function' && define.amd)
 		define([], factory);
 	else if(typeof exports === 'object')
-		exports["Pusher Platform"] = factory();
+		exports["PusherPlatform"] = factory();
 	else
-		root["Pusher Platform"] = factory();
+		root["PusherPlatform"] = factory();
 })(this, function() {
 return /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
@@ -520,12 +520,12 @@ exports.Subscription = Subscription;
 
 Object.defineProperty(exports, "__esModule", { value: true });
 var base_client_1 = __webpack_require__(0);
-exports.DEFAULT_CLUSTER = "api-ceres.kube.pusherplatform.io";
+var DEFAULT_CLUSTER = "api-ceres.kube.pusherplatform.io";
 var App = (function () {
     function App(options) {
         this.appId = options.appId;
         this.client = options.client || new base_client_1.BaseClient({
-            cluster: options.cluster || exports.DEFAULT_CLUSTER,
+            cluster: options.cluster || DEFAULT_CLUSTER,
             encrypted: options.encrypted
         });
     }
@@ -705,42 +705,36 @@ exports.ResumableSubscription = ResumableSubscription;
 
 "use strict";
 
+var __assign = (this && this.__assign) || Object.assign || function(t) {
+    for (var s, i = 1, n = arguments.length; i < n; i++) {
+        s = arguments[i];
+        for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+            t[p] = s[p];
+    }
+    return t;
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 var pusher_platform_js_1 = __webpack_require__(0);
-//Sample options object
-var optionsObj = {
-    appId: "sdads",
-    cluster: "api-ceres.kube.pusherplatform.io",
-    feedId: "zans-awesome-feed" // <- mandatory
-};
 var Feed = (function () {
     function Feed(options) {
         this.serviceName = "feeds";
         this.servicePath = "services/feeds/v1/";
-        var appOptions = {
-            appId: options.appId,
-            cluster: options.cluster
-        };
-        this.app = new pusher_platform_js_1.App(appOptions);
+        this.app = new pusher_platform_js_1.App(options);
         this.feedId = options.feedId;
     }
     Feed.prototype.subscribe = function (options) {
-        return this.app.resumableSubscribe({
-            path: this.feedItemsPath(),
-            lastEventId: options.lastEventId,
-            onOpening: options.onOpening,
-            onOpen: options.onOpen,
-            onEvent: options.onItem,
-            onEnd: options.onEnd,
-            onError: options.onError
-        });
+        var queryString = "";
+        if (options.tailSize) {
+            queryString = "?tail_size=" + options.tailSize;
+        }
+        return this.app.resumableSubscribe(__assign({ path: this.itemsPath + queryString }, options));
     };
-    Feed.prototype.fetchOlderThan = function (options) {
+    Feed.prototype.getHistory = function (options) {
         var _this = this;
         var queryString = "";
         var queryParams = [];
-        if (options && options.id) {
-            queryParams.push("from_id=" + options.id);
+        if (options && options.fromId) {
+            queryParams.push("from_id=" + options.fromId);
         }
         if (options && options.limit) {
             queryParams.push("limit=" + options.limit);
@@ -748,48 +742,57 @@ var Feed = (function () {
         if (queryParams.length > 0) {
             queryString = "?" + queryParams.join("&");
         }
-        var pathWithQuery = this.feedItemsPath() + queryString;
         return new Promise(function (resolve, reject) {
-            return _this.app.request({ method: "GET", path: pathWithQuery })
-                .then(function (response) {
+            return _this.app.request({
+                method: "GET",
+                path: _this.itemsPath + queryString,
+            }).then(function (response) {
                 try {
                     resolve(JSON.parse(response));
                 }
-                catch (e) {
-                    reject(e);
+                catch (err) {
+                    reject(err);
                 }
-            }).catch(function (error) {
-                reject(error);
-            });
+            }).catch(reject);
         });
     };
     Feed.prototype.publish = function (item) {
         return this.app.request({
             method: "POST",
-            path: this.feedItemsPath(),
-            body: { items: [item] }
+            path: this.itemsPath,
+            body: { items: [item] },
         });
     };
-    Feed.prototype.feedItemsPath = function () {
-        return this.servicePath + "/feeds/" + this.feedId + "/items";
+    Feed.prototype.publishBatch = function (items) {
+        return this.app.request({
+            method: "POST",
+            path: this.itemsPath,
+            body: { items: items },
+        });
     };
     Feed.prototype.listFeeds = function () {
         var _this = this;
         return new Promise(function (resolve, reject) {
-            _this.app.request({ method: "GET", path: "feeds" })
-                .then(function (responseBody) {
+            _this.app.request({
+                method: "GET",
+                path: "feeds",
+            }).then(function (responseBody) {
                 try {
                     resolve(JSON.parse(responseBody));
                 }
-                catch (e) {
-                    reject(e);
+                catch (err) {
+                    reject(err);
                 }
-            })
-                .catch(function (error) {
-                reject(error);
-            });
+            }).catch(reject);
         });
     };
+    Object.defineProperty(Feed.prototype, "itemsPath", {
+        get: function () {
+            return this.servicePath + "/feeds/" + this.feedId + "/items";
+        },
+        enumerable: true,
+        configurable: true
+    });
     return Feed;
 }());
 exports.Feed = Feed;
