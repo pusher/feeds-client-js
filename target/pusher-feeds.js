@@ -715,12 +715,58 @@ var __assign = (this && this.__assign) || Object.assign || function(t) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var pusher_platform_js_1 = __webpack_require__(0);
+var FeedAuthorizer = (function () {
+    function FeedAuthorizer(_a) {
+        var feedId = _a.feedId, authEndpoint = _a.authEndpoint;
+        this.defaultAuthEndpoint = "/feeds/tokens";
+        this.feedId = feedId;
+        this.authEndpoint = authEndpoint || this.defaultAuthEndpoint;
+    }
+    Object.defineProperty(FeedAuthorizer.prototype, "authUrl", {
+        get: function () {
+            return this.authEndpoint + "?feed_id=" + this.feedId + "&type=READ";
+        },
+        enumerable: true,
+        configurable: true
+    });
+    FeedAuthorizer.prototype.makeAuthRequest = function () {
+        var _this = this;
+        return new Promise(function (resolve, reject) {
+            var xhr = new XMLHttpRequest();
+            xhr.open("GET", _this.authUrl);
+            xhr.addEventListener("load", function () {
+                if (xhr.status === 200) {
+                    resolve(JSON.parse(xhr.responseText).token);
+                }
+                else {
+                    reject(new Error("Couldn't get token from " + _this.authEndpoint + "; got " + xhr.status + " " + xhr.statusText + "."));
+                }
+            });
+            xhr.send();
+        });
+    };
+    FeedAuthorizer.prototype.authorize = function () {
+        if (this.feedId.startsWith("private-")) {
+            return this.makeAuthRequest();
+        }
+        return Promise.resolve(null);
+    };
+    return FeedAuthorizer;
+}());
+exports.FeedAuthorizer = FeedAuthorizer;
 var Feed = (function () {
     function Feed(options) {
         this.serviceName = "feeds";
         this.servicePath = "services/feeds/v1/";
         this.app = new pusher_platform_js_1.App(options);
         this.feedId = options.feedId;
+        if (options.authorizer) {
+            // TODO provide authorizer as an option to the app constructor?
+            this.app.authorizer = options.authorizer;
+        }
+        else {
+            this.app.authorizer = new FeedAuthorizer(options);
+        }
     }
     Feed.prototype.subscribe = function (options) {
         var queryString = "";

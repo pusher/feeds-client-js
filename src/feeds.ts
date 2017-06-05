@@ -1,6 +1,7 @@
 import {
     App,
     AppOptions,
+    Authorizer,
     DEFAULT_CLUSTER,
     Event,
     ResumableSubscription,
@@ -9,31 +10,84 @@ import {
 
 export interface FeedOptions extends AppOptions {
     feedId: string;
+    authEndpoint?: string;
+    authorizer?: Authorizer;
 }
 
-export interface SubscribeOptions extends ResumableSubscribeOptions {
+export interface FeedSubscribeOptions extends ResumableSubscribeOptions {
     tailSize?: number;
 }
 
-export interface GetHistoryOptions {
+export interface FeedHistoryOptions {
     fromId?: string;
     limit?: number;
 }
 
+interface FeedAuthorizerOptions {
+    feedId: string;
+    authEndpoint?: string;
+}
+
 type Response = any;
+type Item = any;
+type Token = string;
+
+class FeedAuthorizer {
+    private feedId: string;
+    private authEndpoint: string;
+    private defaultAuthEndpoint: string = "/feeds/tokens";
+    constructor({ feedId, authEndpoint }: FeedAuthorizerOptions) {
+        this.feedId = feedId;
+        this.authEndpoint = authEndpoint || this.defaultAuthEndpoint;
+    }
+
+    private get authUrl(): string {
+        return `${this.authEndpoint}?feed_id=${this.feedId}&type=READ`;
+    }
+
+    makeAuthRequest(): Promise<Token> {
+        return new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open("GET", this.authUrl);
+            xhr.addEventListener("load", () => {
+                if (xhr.status === 200) {
+                    resolve(JSON.parse(xhr.responseText).token);
+                } else {
+                    reject(new Error(`Couldn't get token from ${this.authEndpoint}; got ${xhr.status} ${xhr.statusText}.`));
+                }
+            });
+            xhr.send();
+        });
+    }
+
+    authorize(): Promise<Token> {
+        // TODO caching
+        if (this.feedId.startsWith("private-")) {
+            return this.makeAuthRequest();
+        }
+        return Promise.resolve(null);
+    }
+}
 
 export class Feed {
     public app: App;
     public feedId: string;
+    private authorizer: Authorizer;
     readonly serviceName: string = "feeds";
 
     constructor(options: FeedOptions)
     {
         this.app = new App(options);
         this.feedId = options.feedId;
+        if (options.authorizer) {
+            // TODO provide authorizer as an option to the app constructor?
+            this.app.authorizer = options.authorizer;
+        } else {
+            this.app.authorizer = new FeedAuthorizer(options);
+        }
     }
 
-    subscribe(options: SubscribeOptions): ResumableSubscription {
+    subscribe(options: FeedSubscribeOptions): Promise<ResumableSubscription> {
         let queryString = "";
         if (options.tailSize) {
             queryString = `?tail_size=${ options.tailSize }`;
@@ -44,7 +98,7 @@ export class Feed {
         });
     }
 
-    getHistory(options?: GetHistoryOptions): Promise<any> {
+    getHistory(options?: FeedHistoryOptions): Promise<Response> {
         let queryString = "";
         let queryParams: string[] = [];
         if (options && options.fromId) {
@@ -70,22 +124,6 @@ export class Feed {
         });
     }
 
-    publish(item: any): Promise<Response> {
-        return this.app.request({
-            method: "POST",
-            path: this.itemsPath,
-            body: { items: [ item ] },
-        });
-    }
-
-    publishBatch(items: any[]): Promise<Response> {
-        return this.app.request({
-            method: "POST",
-            path: this.itemsPath,
-            body: { items },
-        });
-    }
-
     listFeeds(): Promise<string[]> {
         return new Promise((resolve, reject) => {
             this.app.request({
@@ -101,7 +139,7 @@ export class Feed {
         });
     }
 
-    private servicePath: string = `services/feeds/v1/`;
+    private servicePath: string = "services/feeds/v1/";
 
     private get itemsPath(): string {
         return `${this.servicePath}/feeds/${this.feedId}/items`;

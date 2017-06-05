@@ -3,13 +3,13 @@
     <body>
         <script type="text/javascript" src="../target/pusher-feeds.js"></script>    
         <script type="text/javascript">
-            let feed = new PusherFeeds.Feed({
+            const feed = new PusherFeeds.Feed({
                 appId: "4ff02853-helo-4590-81c7-42c09f25d113",
                 feedId: "zans-feed",
             });
             feed.subscribe({
                 onEvent: event => console.log(event),
-                onOpen: () => console.log("open"),
+                onOpen: () => console.log("opened public"),
                 onError: error => console.error(error),
                 tailSize: 10,
             });
