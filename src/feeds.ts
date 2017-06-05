@@ -42,14 +42,11 @@ export class Feed {
         if (!options.feedId.match(this.feedIdRegex)) {
             throw new TypeError(`Invalid feedId: ${ options.feedId }`);
         }
-        this.app = new App(options);
         this.feedId = options.feedId;
-        if (options.authorizer) {
-            // TODO provide authorizer as an option to the app constructor?
-            this.app.authorizer = options.authorizer;
-        } else {
-            this.app.authorizer = new FeedAuthorizer(options);
+        if (!options.authorizer) {
+            options.authorizer = new FeedAuthorizer(options);
         }
+        this.app = new App(options);
     }
 
     subscribe(options: FeedSubscribeOptions): Promise<ResumableSubscription> {
