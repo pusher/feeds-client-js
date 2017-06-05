@@ -32,12 +32,16 @@ export class Feed {
     public feedId: string;
     private authorizer: Authorizer;
     private readonly servicePath: string = "services/feeds/v1/";
+    private readonly feedIdRegex: RegExp = /^[a-zA-Z0-9-]+$/;
 
     private get itemsPath(): string {
-        return `${this.servicePath}/feeds/${this.feedId}/items`;
+        return `${ this.servicePath }/feeds/${ this.feedId }/items`;
     }
-    constructor(options: FeedOptions)
-    {
+
+    constructor(options: FeedOptions) {
+        if (!options.feedId.match(this.feedIdRegex)) {
+            throw new TypeError(`Invalid feedId: ${ options.feedId }`);
+        }
         this.app = new App(options);
         this.feedId = options.feedId;
         if (options.authorizer) {
