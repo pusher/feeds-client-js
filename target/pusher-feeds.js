@@ -802,22 +802,6 @@ var Feed = (function () {
             }).catch(reject);
         });
     };
-    Feed.prototype.listFeeds = function () {
-        var _this = this;
-        return new Promise(function (resolve, reject) {
-            _this.app.request({
-                method: "GET",
-                path: "feeds",
-            }).then(function (responseBody) {
-                try {
-                    resolve(JSON.parse(responseBody));
-                }
-                catch (err) {
-                    reject(err);
-                }
-            }).catch(reject);
-        });
-    };
     Object.defineProperty(Feed.prototype, "itemsPath", {
         get: function () {
             return this.servicePath + "/feeds/" + this.feedId + "/items";

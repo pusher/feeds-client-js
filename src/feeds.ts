@@ -124,21 +124,6 @@ export class Feed {
         });
     }
 
-    listFeeds(): Promise<string[]> {
-        return new Promise((resolve, reject) => {
-            this.app.request({
-                method: "GET",
-                path: "feeds",
-            }).then((responseBody) => {
-                try { 
-                    resolve(JSON.parse(responseBody));
-                } catch(err){
-                    reject(err);
-                }
-            }).catch(reject);
-        });
-    }
-
     private servicePath: string = "services/feeds/v1/";
 
     private get itemsPath(): string {
