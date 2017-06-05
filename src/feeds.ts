@@ -6,7 +6,7 @@ import {
     Event,
     ResumableSubscription,
     ResumableSubscribeOptions,
-} from 'pusher-platform-js';
+} from "pusher-platform-js";
 
 export interface FeedOptions extends AppOptions {
     feedId: string;

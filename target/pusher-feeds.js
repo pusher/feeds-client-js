@@ -746,6 +746,7 @@ var FeedAuthorizer = (function () {
         });
     };
     FeedAuthorizer.prototype.authorize = function () {
+        // TODO caching
         if (this.feedId.startsWith("private-")) {
             return this.makeAuthRequest();
         }
@@ -753,7 +754,6 @@ var FeedAuthorizer = (function () {
     };
     return FeedAuthorizer;
 }());
-exports.FeedAuthorizer = FeedAuthorizer;
 var Feed = (function () {
     function Feed(options) {
         this.serviceName = "feeds";
@@ -800,20 +800,6 @@ var Feed = (function () {
                     reject(err);
                 }
             }).catch(reject);
-        });
-    };
-    Feed.prototype.publish = function (item) {
-        return this.app.request({
-            method: "POST",
-            path: this.itemsPath,
-            body: { items: [item] },
-        });
-    };
-    Feed.prototype.publishBatch = function (items) {
-        return this.app.request({
-            method: "POST",
-            path: this.itemsPath,
-            body: { items: items },
         });
     };
     Feed.prototype.listFeeds = function () {
