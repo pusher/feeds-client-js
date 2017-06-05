@@ -8,6 +8,10 @@ import {
     ResumableSubscribeOptions,
 } from "pusher-platform-js";
 
+import FeedAuthorizer from "./feed-authorizer"
+
+type Response = any;
+
 export interface FeedOptions extends AppOptions {
     feedId: string;
     authEndpoint?: string;
@@ -23,58 +27,15 @@ export interface FeedHistoryOptions {
     limit?: number;
 }
 
-interface FeedAuthorizerOptions {
-    feedId: string;
-    authEndpoint?: string;
-}
-
-type Response = any;
-type Item = any;
-type Token = string;
-
-class FeedAuthorizer {
-    private feedId: string;
-    private authEndpoint: string;
-    private defaultAuthEndpoint: string = "/feeds/tokens";
-    constructor({ feedId, authEndpoint }: FeedAuthorizerOptions) {
-        this.feedId = feedId;
-        this.authEndpoint = authEndpoint || this.defaultAuthEndpoint;
-    }
-
-    private get authUrl(): string {
-        return `${this.authEndpoint}?feed_id=${this.feedId}&type=READ`;
-    }
-
-    makeAuthRequest(): Promise<Token> {
-        return new Promise((resolve, reject) => {
-            const xhr = new XMLHttpRequest();
-            xhr.open("GET", this.authUrl);
-            xhr.addEventListener("load", () => {
-                if (xhr.status === 200) {
-                    resolve(JSON.parse(xhr.responseText).token);
-                } else {
-                    reject(new Error(`Couldn't get token from ${this.authEndpoint}; got ${xhr.status} ${xhr.statusText}.`));
-                }
-            });
-            xhr.send();
-        });
-    }
-
-    authorize(): Promise<Token> {
-        // TODO caching
-        if (this.feedId.startsWith("private-")) {
-            return this.makeAuthRequest();
-        }
-        return Promise.resolve(null);
-    }
-}
-
 export class Feed {
     public app: App;
     public feedId: string;
     private authorizer: Authorizer;
-    readonly serviceName: string = "feeds";
+    private readonly servicePath: string = "services/feeds/v1/";
 
+    private get itemsPath(): string {
+        return `${this.servicePath}/feeds/${this.feedId}/items`;
+    }
     constructor(options: FeedOptions)
     {
         this.app = new App(options);
@@ -122,11 +83,5 @@ export class Feed {
                 }
             }).catch(reject);
         });
-    }
-
-    private servicePath: string = "services/feeds/v1/";
-
-    private get itemsPath(): string {
-        return `${this.servicePath}/feeds/${this.feedId}/items`;
     }
 }
