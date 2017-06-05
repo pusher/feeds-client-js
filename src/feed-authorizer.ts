@@ -5,31 +5,35 @@ interface FeedAuthorizerOptions {
     authEndpoint?: string;
 }
 
+function requestBody(feedId): string {
+    return `grant_type=client_credentials&feed_id=${ feedId }&type=READ`;
+}
+
 export default class FeedAuthorizer {
     private feedId: string;
     private authEndpoint: string;
-    private defaultAuthEndpoint: string = "/feeds/tokens";
+    private readonly defaultAuthEndpoint: string = "/feeds/tokens";
     constructor({ feedId, authEndpoint }: FeedAuthorizerOptions) {
         this.feedId = feedId;
         this.authEndpoint = authEndpoint || this.defaultAuthEndpoint;
     }
 
-    private get authUrl(): string {
-        return `${this.authEndpoint}?feed_id=${this.feedId}&type=READ`;
-    }
-
     makeAuthRequest(): Promise<Token> {
         return new Promise((resolve, reject) => {
             const xhr = new XMLHttpRequest();
-            xhr.open("GET", this.authUrl);
+            xhr.open("POST", this.authEndpoint);
             xhr.addEventListener("load", () => {
                 if (xhr.status === 200) {
-                    resolve(JSON.parse(xhr.responseText).token);
+                    resolve(JSON.parse(xhr.responseText).access_token);
                 } else {
                     reject(new Error(`Couldn't get token from ${this.authEndpoint}; got ${xhr.status} ${xhr.statusText}.`));
                 }
             });
-            xhr.send();
+            xhr.setRequestHeader(
+                "content-type",
+                "application/x-www-form-urlencoded",
+            );
+            xhr.send(requestBody(this.feedId));
         });
     }
 
