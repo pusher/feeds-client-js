@@ -3,7 +3,7 @@ module.exports = {
     main: './src/feeds.ts',
   },
   output: {
-    filename: "target/pusher-feeds.js",
+    filename: "target/pusher-feeds-client.js",
     libraryTarget: "umd",
     library: "PusherFeeds"
   },
