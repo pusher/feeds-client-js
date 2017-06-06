@@ -23,6 +23,6 @@
   },
   "version": "0.1.0",
   "dependencies": {
-    "pusher-platform-js": "../pusher-platform-js"
+    "pusher-platform-js": "git+https://github.com/pusher/pusher-platform-js.git"
   }
 }
