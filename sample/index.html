@@ -1,18 +1,18 @@
 <html>
-    <head></head>
-    <body>
-        <script type="text/javascript" src="../target/pusher-feeds-client.js"></script>
-        <script type="text/javascript">
-            const feed = new PusherFeeds.Feed({
-                appId: "4ff02853-helo-4590-81c7-42c09f25d113",
-                feedId: "zans-feed",
-            });
-            feed.subscribe({
-                onEvent: event => console.log(event),
-                onOpen: () => console.log("opened public"),
-                onError: error => console.error(error),
-                tailSize: 10,
-            });
-        </script>
-    </body>
+  <head></head>
+  <body>
+    <script type="text/javascript" src="../target/pusher-feeds-client.js"></script>
+    <script type="text/javascript">
+      const feed = new PusherFeeds.Feed({
+        appId: "4ff02853-helo-4590-81c7-42c09f25d113",
+        feedId: "zans-feed",
+      });
+      feed.subscribe({
+        onEvent: event => console.log(event),
+        onOpen: () => console.log("opened"),
+        onError: error => console.error(error),
+        tailSize: 10,
+      });
+    </script>
+  </body>
 </html>
