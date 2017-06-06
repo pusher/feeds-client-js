@@ -1,6 +1,6 @@
 module.exports = {
   entry: {
-    main: './src/feeds.ts',
+    main: './src/feed.ts',
   },
   output: {
     filename: "target/pusher-feeds-client.js",
