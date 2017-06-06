@@ -2,8 +2,6 @@ import {
     App,
     AppOptions,
     Authorizer,
-    DEFAULT_CLUSTER,
-    Event,
     ResumableSubscription,
     ResumableSubscribeOptions,
 } from "pusher-platform-js";

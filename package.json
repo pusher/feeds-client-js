@@ -1,12 +1,12 @@
 {
   "name": "feeds-client-js",
   "description": "Pusher Feeds client library for the web",
-  "main": "target/pusher-feeds.js",
+  "main": "target/pusher-feeds-client.js",
   "author": "Pusher",
   "license": "MIT",
-  "homepage": "https://github.com/pusher/pusher-platform-js",
+  "homepage": "https://github.com/pusher/feeds-client-js",
   "bugs": {
-    "url": "https://github.com/pusher/pusher-platform-js/issues"
+    "url": "https://github.com/pusher/feeds-client-js/issues"
   },
   "repository": {
     "type": "git",
