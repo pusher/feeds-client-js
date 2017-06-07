@@ -708,7 +708,8 @@ var Feed = function () {
         queryString = "?tail_size=" + options.tailSize;
       }
       return this.service.resumableSubscribe(_extends({
-        path: this.itemsPath + queryString
+        path: this.itemsPath + queryString,
+        authorizer: this.authorizer
       }, options));
     }
   }, {

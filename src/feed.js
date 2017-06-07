@@ -14,6 +14,7 @@ export default class Feed {
     }
     return this.service.resumableSubscribe({
       path: this.itemsPath + queryString,
+      authorizer: this.authorizer,
       ...options,
     });
   }
