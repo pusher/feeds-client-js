@@ -16,7 +16,7 @@ export default class FeedAuthorizer {
   }
 
   authorize() {
-    if (this.feedId.startsWith("private-") && this.cacheIsStale) {
+    if (this.cacheIsStale) {
       return this.makeAuthRequest().then(responseBody => {
         this.cache(responseBody.access_token, responseBody.expires_in);
         return this.cachedToken;

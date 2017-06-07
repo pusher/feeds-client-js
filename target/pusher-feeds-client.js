@@ -1,8 +1,8 @@
 (function (global, factory) {
-	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
-	typeof define === 'function' && define.amd ? define(['exports'], factory) :
-	(factory((global.PusherFeeds = global.PusherFeeds || {})));
-}(this, (function (exports) { 'use strict';
+	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
+	typeof define === 'function' && define.amd ? define(factory) :
+	(global.PusherFeeds = factory());
+}(this, (function () { 'use strict';
 
 var commonjsGlobal = typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
 
@@ -686,6 +686,69 @@ var _extends = Object.assign || function (target) {
   return target;
 };
 
+var servicePath = "services/feeds/v1/";
+
+var Feed = function () {
+  function Feed(_ref) {
+    var service = _ref.service,
+        feedId = _ref.feedId,
+        authorizer = _ref.authorizer;
+    classCallCheck(this, Feed);
+
+    this.service = service;
+    this.feedId = feedId;
+    this.authorizer = authorizer;
+  }
+
+  createClass(Feed, [{
+    key: "subscribe",
+    value: function subscribe(options) {
+      var queryString = "";
+      if (options.tailSize) {
+        queryString = "?tail_size=" + options.tailSize;
+      }
+      return this.service.resumableSubscribe(_extends({
+        path: this.itemsPath + queryString
+      }, options));
+    }
+  }, {
+    key: "getHistory",
+    value: function getHistory(options) {
+      var _this = this;
+
+      var queryString = "";
+      var queryParams = [];
+      if (options && options.fromId) {
+        queryParams.push("from_id=" + options.fromId);
+      }
+      if (options && options.limit) {
+        queryParams.push("limit=" + options.limit);
+      }
+      if (queryParams.length > 0) {
+        queryString = "?" + queryParams.join("&");
+      }
+      return new Promise(function (resolve, reject) {
+        return _this.service.request({
+          method: "GET",
+          path: _this.itemsPath + queryString
+        }).then(function (response) {
+          try {
+            resolve(JSON.parse(response));
+          } catch (err) {
+            reject(err);
+          }
+        }).catch(reject);
+      });
+    }
+  }, {
+    key: "itemsPath",
+    get: function get$$1() {
+      return servicePath + "/feeds/" + this.feedId + "/items";
+    }
+  }]);
+  return Feed;
+}();
+
 var cacheExpiryTolerance = 60;
 var defaultAuthEndpoint = "/feeds/tokens";
 
@@ -712,7 +775,7 @@ var FeedAuthorizer = function () {
     value: function authorize() {
       var _this = this;
 
-      if (this.feedId.startsWith("private-") && this.cacheIsStale) {
+      if (this.cacheIsStale) {
         return this.makeAuthRequest().then(function (responseBody) {
           _this.cache(responseBody.access_token, responseBody.expires_in);
           return _this.cachedToken;
@@ -754,74 +817,48 @@ var FeedAuthorizer = function () {
   return FeedAuthorizer;
 }();
 
-var servicePath = "services/feeds/v1/";
+// TODO App -> Service upstream
 var feedIdRegex = /^[a-zA-Z0-9-]+$/;
+var serviceIdRegex = /^[a-zA-Z0-9-]+$/;
 
-var Feed = function () {
-  function Feed(options) {
-    classCallCheck(this, Feed);
+var PusherFeeds = function () {
+  function PusherFeeds(_ref) {
+    var serviceId = _ref.serviceId,
+        cluster = _ref.cluster,
+        authEndpoint = _ref.authEndpoint;
+    classCallCheck(this, PusherFeeds);
 
-    if (!options.feedId.match(feedIdRegex)) {
-      throw new TypeError("Invalid feedId: " + options.feedId);
+    this.authEndpoint = authEndpoint;
+    if (!serviceId || !serviceId.match(serviceIdRegex)) {
+      throw new TypeError("Invalid serviceId: " + serviceId);
     }
-    this.feedId = options.feedId;
-    if (!options.authorizer) {
-      options.authorizer = new FeedAuthorizer(options);
-    }
-    this.app = new pusherPlatform_1(options);
+    // TODO appId -> serviceId upstream
+    this.service = new pusherPlatform_1({ appId: serviceId, cluster: cluster });
   }
 
-  createClass(Feed, [{
-    key: "subscribe",
-    value: function subscribe(options) {
-      var queryString = "";
-      if (options.tailSize) {
-        queryString = "?tail_size=" + options.tailSize;
-      }
-      return this.app.resumableSubscribe(_extends({
-        path: this.itemsPath + queryString
-      }, options));
-    }
-  }, {
-    key: "getHistory",
-    value: function getHistory(options) {
-      var _this = this;
+  createClass(PusherFeeds, [{
+    key: "feed",
+    value: function feed(_ref2) {
+      var feedId = _ref2.feedId,
+          authorizer = _ref2.authorizer,
+          authEndpoint = _ref2.authEndpoint;
 
-      var queryString = "";
-      var queryParams = [];
-      if (options && options.fromId) {
-        queryParams.push("from_id=" + options.fromId);
+      if (!feedId || !feedId.match(feedIdRegex)) {
+        throw new TypeError("Invalid feedId: " + feedId);
       }
-      if (options && options.limit) {
-        queryParams.push("limit=" + options.limit);
+      if (!authorizer && feedId.startsWith("private-")) {
+        authorizer = new FeedAuthorizer({
+          feedId: feedId,
+          authEndpoint: authEndpoint || this.authEndpoint
+        });
       }
-      if (queryParams.length > 0) {
-        queryString = "?" + queryParams.join("&");
-      }
-      return new Promise(function (resolve, reject) {
-        return _this.app.request({
-          method: "GET",
-          path: _this.itemsPath + queryString
-        }).then(function (response) {
-          try {
-            resolve(JSON.parse(response));
-          } catch (err) {
-            reject(err);
-          }
-        }).catch(reject);
-      });
-    }
-  }, {
-    key: "itemsPath",
-    get: function get$$1() {
-      return servicePath + "/feeds/" + this.feedId + "/items";
+      return new Feed({ service: this.service, feedId: feedId, authorizer: authorizer });
     }
   }]);
-  return Feed;
+  return PusherFeeds;
 }();
 
-exports.Feed = Feed;
-
-Object.defineProperty(exports, '__esModule', { value: true });
+return PusherFeeds;
 
 })));
+//# sourceMappingURL=pusher-feeds-client.js.map

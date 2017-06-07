@@ -1,19 +1,10 @@
-import { App } from "pusher-platform-js";
-import FeedAuthorizer from "./feed-authorizer";
-
 const servicePath = "services/feeds/v1/";
-const feedIdRegex = /^[a-zA-Z0-9-]+$/;
 
-export class Feed {
-  constructor(options) {
-    if (!options.feedId.match(feedIdRegex)) {
-      throw new TypeError(`Invalid feedId: ${ options.feedId }`);
-    }
-    this.feedId = options.feedId;
-    if (!options.authorizer) {
-      options.authorizer = new FeedAuthorizer(options);
-    }
-    this.app = new App(options);
+export default class Feed {
+  constructor({ service, feedId, authorizer }) {
+    this.service = service;
+    this.feedId = feedId;
+    this.authorizer = authorizer;
   }
 
   subscribe(options) {
@@ -21,7 +12,7 @@ export class Feed {
     if (options.tailSize) {
       queryString = `?tail_size=${ options.tailSize }`;
     }
-    return this.app.resumableSubscribe({
+    return this.service.resumableSubscribe({
       path: this.itemsPath + queryString,
       ...options,
     });
@@ -40,7 +31,7 @@ export class Feed {
       queryString = `?${ queryParams.join("&") }`;
     }
     return new Promise((resolve, reject) => {
-      return this.app.request({
+      return this.service.request({
         method: "GET",
         path: this.itemsPath + queryString,
       }).then((response) => {
