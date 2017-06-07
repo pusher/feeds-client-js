@@ -23,7 +23,7 @@ export default class PusherFeeds {
     if (!authorizer && feedId.startsWith("private-")) {
       authorizer = new FeedAuthorizer({
         feedId,
-        authEndpoint: authEndpoint || this.authEndpoint
+        authEndpoint: authEndpoint || this.authEndpoint,
       });
     }
     return new Feed({ service: this.service, feedId, authorizer });

@@ -34,7 +34,7 @@ export default class Feed {
       return this.service.request({
         method: "GET",
         path: this.itemsPath + queryString,
-      }).then((response) => {
+      }).then(response => {
         try {
           resolve(JSON.parse(response));
         } catch (err) {
