@@ -35,6 +35,7 @@ export default class Feed {
       return this.service.request({
         method: "GET",
         path: this.itemsPath + queryString,
+        authorizer: this.authorizer,
       }).then(response => {
         try {
           resolve(JSON.parse(response));

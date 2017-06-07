@@ -731,7 +731,8 @@ var Feed = function () {
       return new Promise(function (resolve, reject) {
         return _this.service.request({
           method: "GET",
-          path: _this.itemsPath + queryString
+          path: _this.itemsPath + queryString,
+          authorizer: _this.authorizer
         }).then(function (response) {
           try {
             resolve(JSON.parse(response));
