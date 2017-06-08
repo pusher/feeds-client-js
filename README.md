@@ -1,6 +1,8 @@
 # feeds-client-js The Javascript client for Pusher Feeds.
 
-## Installation yarn:
+## Installation
+
+[yarn](https://yarnpkg.com/):
 
 ```sh $ yarn add https://github.com/pusher/feeds-client-js ```
 
