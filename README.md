@@ -13,7 +13,7 @@ $ yarn add https://github.com/pusher/feeds-client-js
 In a script tag:
 
 ```html
-<script src="https://github.com/pusher/feeds-client-js/blob/master/target/pusher-feeds-client.js"
+<script src="https://github.com/pusher/feeds-client-js/blob/master/target/pusher-feeds-client.js"></script> [TODO does this actually work?]
 ```
 
 ## Quick start
