@@ -20,7 +20,7 @@ In a script tag:
 
 The default export is a `PusherFeeds` class.
 
-Instantiate a service object:
+Instantiate an instance of PusherFeeds:
 
 ```js
 const pusherFeeds = new PusherFeeds({ serviceId: your_service_id });
