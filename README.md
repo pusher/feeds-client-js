@@ -1,15 +1,19 @@
-# feeds-client-js The Javascript client for Pusher Feeds.
+# feeds-client-js
+
+The Javascript client for Pusher Feeds.
 
 ## Installation
 
 [yarn](https://yarnpkg.com/):
 
-```sh $ yarn add https://github.com/pusher/feeds-client-js ```
+```sh
+$ yarn add https://github.com/pusher/feeds-client-js
+```
 
 In a script tag:
 
-```html <script
-src="https://github.com/pusher/feeds-client-js/blob/master/target/pusher-feeds-client.js"
+```html
+<script src="https://github.com/pusher/feeds-client-js/blob/master/target/pusher-feeds-client.js"
 ```
 
 ## Quick start
@@ -18,15 +22,21 @@ The default export is a `PusherFeeds` class.
 
 Instantiate a service object:
 
-```js const pusherFeeds = new PusherFeeds({ serviceId: your_service_id }); ```
+```js
+const pusherFeeds = new PusherFeeds({ serviceId: your_service_id });
+```
 
 Create a feed object:
 
-```js const yourFeed = pusherFeeds.feed({ feedId: your_feed_id }); ```
+```js
+const yourFeed = pusherFeeds.feed({ feedId: your_feed_id });
+```
 
 Subscribe to your feed, and log new events:
 
-```js yourFeed.subscribe({ onEvent: console.log }); ```
+```js
+yourFeed.subscribe({ onEvent: console.log });
+```
 
 ## Reference
 
@@ -109,11 +119,14 @@ Events are passed to the `onEvent` callback with the following format
 Query a `feed` for historical items. Takes a single options object with the
 following properties.
 
-- `fromId`: [optional] look back in the past from this ID; retrieves items _older_ than this ID – if not provided, retrieves the most recently published items
+- `fromId`: [optional] look back in the past from this ID; retrieves items
+  _older_ than this ID – if not provided, retrieves the most recently published
+  items
 
 - `limit`: [optional] limit the number of items to retrieve
 
-Returns a [promise](https://mdn.io/promise) resolving with a single object of the following format.
+Returns a [promise](https://mdn.io/promise) resolving with a single object of
+the following format.
 
 ```js
 {
