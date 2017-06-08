@@ -54,6 +54,12 @@ Returns a reference to a particular feed, from which subscriptions and history q
 
 - `feedId`: [required] the unique identifier of the feed
 
-- `authorizer`: [optional] provide a custom authorizer (advanced usage, you probably just want to provide an `authEndpiont` in the `PusherFeeds` constructor!) [NOTE in fact, should we actually remove, or at least not document this? and the below property? It might cause unnecessary confusion... We are possibly making thing unnecessarily configurable too early]
+- `authorizer`: [optional] provide a custom authorizer for this feed (advanced usage, you probably just want to provide an `authEndpiont` in the `PusherFeeds` constructor!) [NOTE in fact, should we actually remove, or at least not document this? and the below property? It might cause unnecessary confusion... We are possibly making thing unnecessarily configurable too early]
 
 - `authEndpoint`: [optional] the endpiont to use to request tokens for access to _this specific feed_ (advanced usage, in most cases you will use the same endpoint for all feeds, so you probably want to set this property in the `PusherFeeds` constructor instead!) [NOTE see above]
+
+### `feed.subscribe`
+
+Subscribe to reveive new items published to `feed`. A subscription can be resumed from some previously seen event by providing a `lastEventId`, or can be initiated with some initial state by providing a `tailSize`.
+
+- `lastEventId`: [optional] retrieve every item published after `lastEventId`, and then start receiving live events

@@ -699,12 +699,12 @@ var servicePath = "services/feeds/v1/";
 
 var Feed = function () {
   function Feed(_ref) {
-    var service = _ref.service,
+    var app = _ref.app,
         feedId = _ref.feedId,
         authorizer = _ref.authorizer;
     classCallCheck(this, Feed);
 
-    this.service = service;
+    this.app = app;
     this.feedId = feedId;
     this.authorizer = authorizer;
   }
@@ -716,7 +716,7 @@ var Feed = function () {
       if (options.tailSize) {
         queryString = "?tail_size=" + options.tailSize;
       }
-      return this.service.resumableSubscribe(_extends({
+      return this.app.resumableSubscribe(_extends({
         path: this.itemsPath + queryString,
         authorizer: this.authorizer
       }, options));
@@ -738,7 +738,7 @@ var Feed = function () {
         queryString = "?" + queryParams.join("&");
       }
       return new Promise(function (resolve, reject) {
-        return _this.service.request({
+        return _this.app.request({
           method: "GET",
           path: _this.itemsPath + queryString,
           authorizer: _this.authorizer
@@ -828,7 +828,6 @@ var FeedAuthorizer = function () {
   return FeedAuthorizer;
 }();
 
-// TODO App -> Service upstream
 var feedIdRegex = /^[a-zA-Z0-9-]+$/;
 var serviceIdRegex = /^[a-zA-Z0-9-]+$/;
 
@@ -844,7 +843,7 @@ var PusherFeeds = function () {
       throw new TypeError("Invalid serviceId: " + serviceId);
     }
     // TODO appId -> serviceId upstream
-    this.service = new pusherPlatform_1({ appId: serviceId, cluster: cluster });
+    this.app = new pusherPlatform_1({ appId: serviceId, cluster: cluster });
   }
 
   createClass(PusherFeeds, [{
@@ -863,7 +862,7 @@ var PusherFeeds = function () {
           authEndpoint: authEndpoint || this.authEndpoint
         });
       }
-      return new Feed({ service: this.service, feedId: feedId, authorizer: authorizer });
+      return new Feed({ app: this.app, feedId: feedId, authorizer: authorizer });
     }
   }]);
   return PusherFeeds;

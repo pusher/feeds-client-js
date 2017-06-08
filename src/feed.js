@@ -1,8 +1,8 @@
 const servicePath = "services/feeds/v1/";
 
 export default class Feed {
-  constructor({ service, feedId, authorizer }) {
-    this.service = service;
+  constructor({ app, feedId, authorizer }) {
+    this.app = app;
     this.feedId = feedId;
     this.authorizer = authorizer;
   }
@@ -12,7 +12,7 @@ export default class Feed {
     if (options.tailSize) {
       queryString = `?tail_size=${ options.tailSize }`;
     }
-    return this.service.resumableSubscribe({
+    return this.app.resumableSubscribe({
       path: this.itemsPath + queryString,
       authorizer: this.authorizer,
       ...options,
@@ -32,7 +32,7 @@ export default class Feed {
       queryString = `?${ queryParams.join("&") }`;
     }
     return new Promise((resolve, reject) => {
-      return this.service.request({
+      return this.app.request({
         method: "GET",
         path: this.itemsPath + queryString,
         authorizer: this.authorizer,

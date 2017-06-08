@@ -1,5 +1,4 @@
-// TODO App -> Service upstream
-import { App as Service } from "pusher-platform-js";
+import { App } from "pusher-platform-js";
 import Feed from "./feed";
 import FeedAuthorizer from "./feed-authorizer";
 
@@ -13,7 +12,7 @@ export default class PusherFeeds {
       throw new TypeError(`Invalid serviceId: ${ serviceId }`);
     }
     // TODO appId -> serviceId upstream
-    this.service = new Service({ appId: serviceId, cluster });
+    this.app = new App({ appId: serviceId, cluster });
   }
 
   feed({ feedId, authorizer, authEndpoint }) {
@@ -26,6 +25,6 @@ export default class PusherFeeds {
         authEndpoint: authEndpoint || this.authEndpoint,
       });
     }
-    return new Feed({ service: this.service, feedId, authorizer });
+    return new Feed({ app: this.app, feedId, authorizer });
   }
 }
