@@ -1,9 +1,8 @@
 import { App } from "pusher-platform-js";
 import Feed from "./feed";
-import FeedAuthorizer from "./feed-authorizer";
-
-const feedIdRegex = /^[a-zA-Z0-9-]+$/;
-const serviceIdRegex = /^[a-zA-Z0-9-]+$/;
+import FeedsAuthorizer from "./feeds-authorizer";
+import { servicePath, feedIdRegex, serviceIdRegex } from "./constants";
+import { parseResponse, queryString } from "./utils";
 
 export default class PusherFeeds {
   constructor({ serviceId, cluster, authEndpoint }) {
@@ -11,20 +10,49 @@ export default class PusherFeeds {
     if (!serviceId || !serviceId.match(serviceIdRegex)) {
       throw new TypeError(`Invalid serviceId: ${ serviceId }`);
     }
+    this.authorizer = new FeedsAuthorizer({
+      authEndpoint,
+      authData: {
+        type: "ADMIN",
+      }
+    });
     // TODO appId -> serviceId upstream
-    this.app = new App({ appId: serviceId, cluster });
+    this.app = new App({ appId: serviceId, cluster, authorizer });
   }
 
-  feed({ feedId, authorizer, authEndpoint }) {
+  list({ prefix, limit }) {
+    return parseResponse(this.app.request({
+      method: "GET",
+      path: `${ servicePath }/feeds` + queryString({ prefix, limit }),
+      authorizer: this.authorizer,
+    }));
+  }
+
+  feed({ feedId }) {
     if (!feedId || !feedId.match(feedIdRegex)) {
       throw new TypeError(`Invalid feedId: ${ feedId }`);
     }
-    if (!authorizer && feedId.startsWith("private-")) {
-      authorizer = new FeedAuthorizer({
-        feedId,
-        authEndpoint: authEndpoint || this.authEndpoint,
+    if (feedId.startsWith("private-")) {
+      readAuthorizer = new FeedsAuthorizer({
+        authEndpoint,
+        authData: {
+          feed_id: feedId,
+          type: "READ",
+        }
       });
     }
-    return new Feed({ app: this.app, feedId, authorizer });
+    writeAuthorizer = new FeedsAuthorizer({
+      authEndpoint,
+      authData: {
+        feed_id: feedId,
+        type: "WRITE",
+      }
+    });
+    return new Feed({
+      app: this.app,
+      feedId,
+      readAuthorizer,
+      writeAuthorizer,
+    });
   }
 }

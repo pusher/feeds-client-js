@@ -1,18 +1,14 @@
-const cacheExpiryTolerance = 60;
-const defaultAuthEndpoint = "/feeds/tokens";
-
-function requestBody(feedId) {
-  return `grant_type=client_credentials&feed_id=${ feedId }&type=READ`;
-}
+import { cacheExpiryTolerance, defaultAuthEndpoint } from "./constants";
+import { urlEncode } from "./utils";
 
 function now() {
   return Math.floor(Date.now() / 1000);
 }
 
-export default class FeedAuthorizer {
-  constructor({ feedId, authEndpoint }) {
-    this.feedId = feedId;
+export default class FeedsAuthorizer {
+  constructor({ authEndpoint, authData }) {
     this.authEndpoint = authEndpoint || defaultAuthEndpoint;
+    this.authData = authData;
   }
 
   authorize() {
@@ -46,7 +42,10 @@ export default class FeedAuthorizer {
         }
       });
       xhr.setRequestHeader("content-type", "application/x-www-form-urlencoded");
-      xhr.send(requestBody(this.feedId));
+      xhr.send(urlEncode({
+        grant_type: "client_credentials",
+        ...this.authData,
+      }));
     });
   }
 }
