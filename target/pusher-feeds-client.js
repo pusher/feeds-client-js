@@ -862,13 +862,17 @@ var PusherFeeds = function () {
       throw new TypeError("Invalid serviceId: " + serviceId);
     }
     this.authorizer = new FeedsAuthorizer({
-      authEndpoint: authEndpoint,
+      authEndpoint: this.authEndpoint,
       authData: {
         type: "ADMIN"
       }
     });
     // TODO appId -> serviceId upstream
-    this.app = new pusherPlatform_1({ appId: serviceId, cluster: cluster, authorizer: authorizer });
+    this.app = new pusherPlatform_1({
+      appId: serviceId,
+      cluster: cluster,
+      authorizer: this.authorizer
+    });
   }
 
   createClass(PusherFeeds, [{
@@ -891,17 +895,15 @@ var PusherFeeds = function () {
       if (!feedId || !feedId.match(feedIdRegex)) {
         throw new TypeError("Invalid feedId: " + feedId);
       }
-      if (feedId.startsWith("private-")) {
-        readAuthorizer = new FeedsAuthorizer({
-          authEndpoint: authEndpoint,
-          authData: {
-            feed_id: feedId,
-            type: "READ"
-          }
-        });
-      }
-      writeAuthorizer = new FeedsAuthorizer({
-        authEndpoint: authEndpoint,
+      var readAuthorizer = feedId.startsWith("private-") ? new FeedsAuthorizer({
+        authEndpoint: this.authEndpoint,
+        authData: {
+          feed_id: feedId,
+          type: "READ"
+        }
+      }) : null;
+      var writeAuthorizer = new FeedsAuthorizer({
+        authEndpoint: this.authEndpoint,
         authData: {
           feed_id: feedId,
           type: "WRITE"
