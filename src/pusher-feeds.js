@@ -69,6 +69,7 @@ export default class PusherFeeds {
   }
 
   firehose(options) {
+    // TODO wrap onEvent to expose onPublish, onSubscribe, and onUnsubscribe
     return this.app.subscribe({
       path: `${ servicePath }/firehose/items`,
       authorizer: this.authorizer,

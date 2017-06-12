@@ -918,6 +918,7 @@ var PusherFeeds = function () {
   }, {
     key: "firehose",
     value: function firehose(options) {
+      // TODO wrap onEvent to expose onPublish, onSubscribe, and onUnsubscribe
       return this.app.subscribe(_extends({
         path: servicePath + "/firehose/items",
         authorizer: this.authorizer

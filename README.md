@@ -51,7 +51,40 @@ Takes a single options object with the following properties.
   `api-ceres.kube.pusherplatform.io`
 
 - `authEndpiont`: [optional] the endpoint to use to request tokens for access
-  to private channels; see [TODO](auth docs)
+  to private channels; see [auth docs](TODO)
+
+- `authData`: [optional] data to pass to the auth endpoint along with token
+  requests
+
+### `pusherFeeds.list`
+
+List non-empty feeds. This method requires `ADMIN` permission – see [auth
+docs](TODO). Takes a single options object with the following properties.
+
+- `prefix`: [optional] only return those feeds that start with this string
+
+- `limit`: [optional] return at most this many matches
+
+### `pusherFeeds.firehose`
+
+Subscribe to the firehose for this provisioned service to see all events and
+subscriptions on a single subscription. This method requires `ADMIN` permission
+– see [auth docs](TODO). Takes a single options object with the following
+properties
+
+- `onOpending`: [optional] callback to fire when the subscription is opening
+
+- `onOpen`: [optional] callback to fire when the subscription is open
+
+- `onEvent`: [optional] callback to handle events, takes each event as a
+  parameter
+
+- `onEnd`: [optional] callback to fire when the subscription ends normally
+
+- `onError`: [optional] callback to fire when the subscription is closed with
+  error
+
+Returns a `subscription` object with an `unsubscribe` method.
 
 ### `pusherFeeds.feed`
 
@@ -77,7 +110,7 @@ properties.
 
 Subscribe to reveive new items published to `feed`. A subscription can be
 resumed from some previously seen event by providing a `lastEventId`, or can be
-initiated with some initial state by providing a `tailSize`. Takes a single
+initiated with some initial state by providing a `tailSize`. Private feeds require `READ` permission – see [auth docs](TODO). Takes a single
 options object with the following properties.
 
 - `lastEventId`: [optional] retrieve every item published after `lastEventId`,
@@ -116,7 +149,7 @@ Events are passed to the `onEvent` callback with the following format
 
 ### `feed.getHistory`
 
-Query a `feed` for historical items. Takes a single options object with the
+Query a `feed` for historical items. Private feeds require `READ` permission – see [auth docs](TODO). Takes a single options object with the
 following properties.
 
 - `fromId`: [optional] look back in the past from this ID; retrieves items
@@ -141,3 +174,11 @@ the following format.
   ]
 }
 ```
+
+### `feed.publish`
+
+Publish an item to a feed. Requires `WRITE` permission – see [auth docs](TODO). Takes a single `item` parameter, published to the feed as JSON.
+
+### `feed.publishBatch`
+
+As above, but takes a list of `items`, publishing each in turn.
