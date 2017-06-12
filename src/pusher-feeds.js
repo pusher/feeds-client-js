@@ -45,13 +45,13 @@ export default class PusherFeeds {
       throw new TypeError(`Invalid feedId: ${ options.feedId }`);
     }
     const readAuthorizer = feedId.startsWith("private-") ? new FeedsAuthorizer({
-        authEndpoint:  this.authEndpoint,
-        authData: {
-          ...this.authData,
-          feed_id: feedId,
-          type: "READ",
-        }
-      }) : null;
+      authEndpoint:  this.authEndpoint,
+      authData: {
+        ...this.authData,
+        feed_id: feedId,
+        type: "READ",
+      }
+    }) : null;
     const writeAuthorizer = new FeedsAuthorizer({
       authEndpoint: this.authEndpoint,
       authData: {
