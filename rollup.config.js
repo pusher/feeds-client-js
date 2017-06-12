@@ -8,11 +8,7 @@ export default {
   moduleName: "PusherFeeds",
   plugins: [
     resolve(),
-    commonjs({
-      namedExports: {
-        'node_modules/pusher-platform-js/target/pusher-platform.js': [ "App" ]
-      }
-    }),
+    commonjs(),
     babel(),
   ],
   dest: "target/pusher-feeds-client.js",
