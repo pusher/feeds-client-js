@@ -5,10 +5,11 @@ import { servicePath, feedIdRegex, serviceIdRegex } from "./constants";
 import { parseResponse, queryString } from "./utils";
 
 export default class PusherFeeds {
-  constructor({ serviceId, cluster, authEndpoint }) {
-    this.authEndpoint = authEndpoint;
-    if (!serviceId || !serviceId.match(serviceIdRegex)) {
-      throw new TypeError(`Invalid serviceId: ${ serviceId }`);
+  constructor(options) {
+    options = options || {};
+    this.authEndpoint = options.authEndpoint;
+    if (!options.serviceId || !options.serviceId.match(serviceIdRegex)) {
+      throw new TypeError(`Invalid serviceId: ${ options.serviceId }`);
     }
     this.authorizer = new FeedsAuthorizer({
       authEndpoint: this.authEndpoint,
@@ -18,8 +19,8 @@ export default class PusherFeeds {
     });
     // TODO appId -> serviceId upstream
     this.app = new App({
-      appId: serviceId,
-      cluster,
+      appId: options.serviceId,
+      cluster: options.cluster,
       authorizer: this.authorizer,
     });
   }
@@ -36,9 +37,10 @@ export default class PusherFeeds {
     }));
   }
 
-  feed({ feedId }) {
-    if (!feedId || !feedId.match(feedIdRegex)) {
-      throw new TypeError(`Invalid feedId: ${ feedId }`);
+  feed(options) {
+    options = options || {};
+    if (!options.feedId || !options.feedId.match(feedIdRegex)) {
+      throw new TypeError(`Invalid feedId: ${ options.feedId }`);
     }
     const readAuthorizer = feedId.startsWith("private-") ? new FeedsAuthorizer({
         authEndpoint:  this.authEndpoint,

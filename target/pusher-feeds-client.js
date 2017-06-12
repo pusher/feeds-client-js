@@ -851,15 +851,13 @@ var FeedsAuthorizer = function () {
 }();
 
 var PusherFeeds = function () {
-  function PusherFeeds(_ref) {
-    var serviceId = _ref.serviceId,
-        cluster = _ref.cluster,
-        authEndpoint = _ref.authEndpoint;
+  function PusherFeeds(options) {
     classCallCheck(this, PusherFeeds);
 
-    this.authEndpoint = authEndpoint;
-    if (!serviceId || !serviceId.match(serviceIdRegex)) {
-      throw new TypeError("Invalid serviceId: " + serviceId);
+    options = options || {};
+    this.authEndpoint = options.authEndpoint;
+    if (!options.serviceId || !options.serviceId.match(serviceIdRegex)) {
+      throw new TypeError("Invalid serviceId: " + options.serviceId);
     }
     this.authorizer = new FeedsAuthorizer({
       authEndpoint: this.authEndpoint,
@@ -869,8 +867,8 @@ var PusherFeeds = function () {
     });
     // TODO appId -> serviceId upstream
     this.app = new pusherPlatform_1({
-      appId: serviceId,
-      cluster: cluster,
+      appId: options.serviceId,
+      cluster: options.cluster,
       authorizer: this.authorizer
     });
   }
@@ -890,11 +888,10 @@ var PusherFeeds = function () {
     }
   }, {
     key: "feed",
-    value: function feed(_ref2) {
-      var feedId = _ref2.feedId;
-
-      if (!feedId || !feedId.match(feedIdRegex)) {
-        throw new TypeError("Invalid feedId: " + feedId);
+    value: function feed(options) {
+      options = options || {};
+      if (!options.feedId || !options.feedId.match(feedIdRegex)) {
+        throw new TypeError("Invalid feedId: " + options.feedId);
       }
       var readAuthorizer = feedId.startsWith("private-") ? new FeedsAuthorizer({
         authEndpoint: this.authEndpoint,
@@ -916,6 +913,14 @@ var PusherFeeds = function () {
         readAuthorizer: readAuthorizer,
         writeAuthorizer: writeAuthorizer
       });
+    }
+  }, {
+    key: "firehose",
+    value: function firehose(options) {
+      return this.app.subscribe(_extends({
+        path: servicePath + "/firehose/items",
+        authorizer: this.authorizer
+      }, options));
     }
   }]);
   return PusherFeeds;
