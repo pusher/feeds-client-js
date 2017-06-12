@@ -61,4 +61,12 @@ export default class PusherFeeds {
       writeAuthorizer,
     });
   }
+
+  firehose(options) {
+    return this.app.subscribe({
+      path: `${ servicePath }/firehose/items`,
+      authorizer: this.authorizer,
+      ...options,
+    });
+  }
 }
