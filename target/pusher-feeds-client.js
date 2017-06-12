@@ -855,15 +855,16 @@ var PusherFeeds = function () {
     classCallCheck(this, PusherFeeds);
 
     options = options || {};
+    this.authData = options.authData || {};
     this.authEndpoint = options.authEndpoint;
     if (!options.serviceId || !options.serviceId.match(serviceIdRegex)) {
       throw new TypeError("Invalid serviceId: " + options.serviceId);
     }
     this.authorizer = new FeedsAuthorizer({
       authEndpoint: this.authEndpoint,
-      authData: {
+      authData: _extends({}, this.authData, {
         type: "ADMIN"
-      }
+      })
     });
     // TODO appId -> serviceId upstream
     this.app = new pusherPlatform_1({
@@ -895,17 +896,17 @@ var PusherFeeds = function () {
       }
       var readAuthorizer = feedId.startsWith("private-") ? new FeedsAuthorizer({
         authEndpoint: this.authEndpoint,
-        authData: {
+        authData: _extends({}, this.authData, {
           feed_id: feedId,
           type: "READ"
-        }
+        })
       }) : null;
       var writeAuthorizer = new FeedsAuthorizer({
         authEndpoint: this.authEndpoint,
-        authData: {
+        authData: _extends({}, this.authData, {
           feed_id: feedId,
           type: "WRITE"
-        }
+        })
       });
       return new Feed({
         app: this.app,

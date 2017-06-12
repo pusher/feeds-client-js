@@ -7,6 +7,7 @@ import { parseResponse, queryString } from "./utils";
 export default class PusherFeeds {
   constructor(options) {
     options = options || {};
+    this.authData = options.authData || {};
     this.authEndpoint = options.authEndpoint;
     if (!options.serviceId || !options.serviceId.match(serviceIdRegex)) {
       throw new TypeError(`Invalid serviceId: ${ options.serviceId }`);
@@ -14,6 +15,7 @@ export default class PusherFeeds {
     this.authorizer = new FeedsAuthorizer({
       authEndpoint: this.authEndpoint,
       authData: {
+        ...this.authData,
         type: "ADMIN",
       }
     });
@@ -45,6 +47,7 @@ export default class PusherFeeds {
     const readAuthorizer = feedId.startsWith("private-") ? new FeedsAuthorizer({
         authEndpoint:  this.authEndpoint,
         authData: {
+          ...this.authData,
           feed_id: feedId,
           type: "READ",
         }
@@ -52,6 +55,7 @@ export default class PusherFeeds {
     const writeAuthorizer = new FeedsAuthorizer({
       authEndpoint: this.authEndpoint,
       authData: {
+        ...this.authData,
         feed_id: feedId,
         type: "WRITE",
       }
