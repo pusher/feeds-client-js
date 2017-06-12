@@ -35,6 +35,9 @@ export default class Feed {
   }
 
   publishBatch(items) {
+    if (!Array.isArray(items)) {
+      throw new TypeError(`items must be an array`);
+    }
     return parseResponse(this.app.request({
       method: "POST",
       path: this.itemsPath,
