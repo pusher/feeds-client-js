@@ -24,10 +24,14 @@ export default class PusherFeeds {
     });
   }
 
-  list({ prefix, limit }) {
+  list(options) {
+    options = options || {};
     return parseResponse(this.app.request({
       method: "GET",
-      path: `${ servicePath }/feeds` + queryString({ prefix, limit }),
+      path: `${ servicePath }/feeds` + queryString({
+        prefix: options.prefix,
+        limit: options.limit,
+      }),
       authorizer: this.authorizer,
     }));
   }

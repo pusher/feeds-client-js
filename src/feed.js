@@ -31,7 +31,7 @@ export default class Feed {
   }
 
   publish(item) {
-    return publishBatch([ item ]);
+    return this.publishBatch([ item ]);
   }
 
   publishBatch(items) {

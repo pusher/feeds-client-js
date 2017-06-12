@@ -766,7 +766,7 @@ var Feed = function () {
   }, {
     key: "publish",
     value: function publish(item) {
-      return publishBatch([item]);
+      return this.publishBatch([item]);
     }
   }, {
     key: "publishBatch",
@@ -877,20 +877,21 @@ var PusherFeeds = function () {
 
   createClass(PusherFeeds, [{
     key: "list",
-    value: function list(_ref2) {
-      var prefix = _ref2.prefix,
-          limit = _ref2.limit;
-
+    value: function list(options) {
+      options = options || {};
       return parseResponse(this.app.request({
         method: "GET",
-        path: servicePath + "/feeds" + queryString({ prefix: prefix, limit: limit }),
+        path: servicePath + "/feeds" + queryString({
+          prefix: options.prefix,
+          limit: options.limit
+        }),
         authorizer: this.authorizer
       }));
     }
   }, {
     key: "feed",
-    value: function feed(_ref3) {
-      var feedId = _ref3.feedId;
+    value: function feed(_ref2) {
+      var feedId = _ref2.feedId;
 
       if (!feedId || !feedId.match(feedIdRegex)) {
         throw new TypeError("Invalid feedId: " + feedId);
