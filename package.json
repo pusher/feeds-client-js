@@ -1,5 +1,5 @@
 {
-  "name": "feeds-client-js",
+  "name": "pusher-feeds-client",
   "description": "Pusher Feeds client library for the web",
   "main": "target/pusher-feeds-client.js",
   "author": "Pusher",
