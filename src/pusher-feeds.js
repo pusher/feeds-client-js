@@ -1,4 +1,4 @@
-import { App } from "pusher-platform-js";
+import PusherPlatform from "pusher-platform-js";
 import Feed from "./feed";
 import FeedsAuthorizer from "./feeds-authorizer";
 import { servicePath, feedIdRegex, serviceIdRegex } from "./constants";
@@ -19,9 +19,8 @@ export default class PusherFeeds {
         type: "ADMIN",
       }
     });
-    // TODO appId -> serviceId upstream
-    this.app = new App({
-      appId: options.serviceId,
+    this.app = new PusherPlatform.App({
+      serviceId: options.serviceId,
       cluster: options.cluster,
       authorizer: this.authorizer,
     });
@@ -39,10 +38,9 @@ export default class PusherFeeds {
     }));
   }
 
-  feed(options) {
-    options = options || {};
-    if (!options.feedId || !options.feedId.match(feedIdRegex)) {
-      throw new TypeError(`Invalid feedId: ${ options.feedId }`);
+  feed(feedId) {
+    if (!feedId || !feedId.match(feedIdRegex)) {
+      throw new TypeError(`Invalid feedId: ${ feedId }`);
     }
     const readAuthorizer = feedId.startsWith("private-") ? new FeedsAuthorizer({
       authEndpoint:  this.authEndpoint,
@@ -52,19 +50,10 @@ export default class PusherFeeds {
         type: "READ",
       }
     }) : null;
-    const writeAuthorizer = new FeedsAuthorizer({
-      authEndpoint: this.authEndpoint,
-      authData: {
-        ...this.authData,
-        feed_id: feedId,
-        type: "WRITE",
-      }
-    });
     return new Feed({
       app: this.app,
       feedId,
       readAuthorizer,
-      writeAuthorizer,
     });
   }
 

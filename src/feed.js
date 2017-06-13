@@ -2,11 +2,10 @@ import { servicePath } from "./constants";
 import { parseResponse, queryString } from "./utils";
 
 export default class Feed {
-  constructor({ app, feedId, readAuthorizer, writeAuthorizer }) {
+  constructor({ app, feedId, readAuthorizer }) {
     this.app = app;
     this.feedId = feedId;
     this.readAuthorizer = readAuthorizer;
-    this.writeAuthorizer = writeAuthorizer;
   }
 
   subscribe(options) {
@@ -27,22 +26,6 @@ export default class Feed {
         limit: limit,
       }),
       authorizer: this.readAuthorizer,
-    }));
-  }
-
-  publish(item) {
-    return this.publishBatch([ item ]);
-  }
-
-  publishBatch(items) {
-    if (!Array.isArray(items)) {
-      throw new TypeError(`items must be an array`);
-    }
-    return parseResponse(this.app.request({
-      method: "POST",
-      path: this.itemsPath,
-      body: { items },
-      authorizer: this.writeAuthorizer,
     }));
   }
 

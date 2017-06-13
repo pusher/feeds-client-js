@@ -8,7 +8,9 @@ var commonjsGlobal = typeof window !== 'undefined' ? window : typeof global !== 
 
 
 
-
+function unwrapExports (x) {
+	return x && x.__esModule ? x['default'] : x;
+}
 
 function createCommonjsModule(fn, module) {
 	return module = { exports: {} }, fn(module, module.exports), module.exports;
@@ -97,7 +99,7 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
                 /******/__webpack_require__.p = "";
                 /******/
                 /******/ // Load entry module and return exports
-                /******/return __webpack_require__(__webpack_require__.s = 2);
+                /******/return __webpack_require__(__webpack_require__.s = 4);
                 /******/
             }(
             /************************************************************************/
@@ -109,7 +111,7 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
 
                 Object.defineProperty(exports, "__esModule", { value: true });
                 var subscription_1 = __webpack_require__(1);
-                var resumable_subscription_1 = __webpack_require__(3);
+                var resumable_subscription_1 = __webpack_require__(2);
                 function responseHeadersObj(headerStr) {
                     var headers = {};
                     if (!headerStr) {
@@ -459,75 +461,6 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
 
                 "use strict";
 
-                var __assign = this && this.__assign || Object.assign || function (t) {
-                    for (var s, i = 1, n = arguments.length; i < n; i++) {
-                        s = arguments[i];
-                        for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p)) t[p] = s[p];
-                    }
-                    return t;
-                };
-                Object.defineProperty(exports, "__esModule", { value: true });
-                var base_client_1 = __webpack_require__(0);
-                var DEFAULT_CLUSTER = "api-ceres.kube.pusherplatform.io";
-                var App = function () {
-                    function App(options) {
-                        this.appId = options.appId;
-                        this.authorizer = options.authorizer;
-                        this.client = options.client || new base_client_1.BaseClient({
-                            cluster: options.cluster || DEFAULT_CLUSTER,
-                            encrypted: options.encrypted
-                        });
-                    }
-                    App.prototype.request = function (options) {
-                        var _this = this;
-                        options.path = this.absPath(options.path);
-                        var authorizer = options.authorizer || this.authorizer;
-                        if (!options.jwt && authorizer) {
-                            return authorizer.authorize().then(function (jwt) {
-                                return _this.client.request(__assign({ jwt: jwt }, options));
-                            });
-                        } else {
-                            return this.client.request(options);
-                        }
-                    };
-                    App.prototype.subscribe = function (options) {
-                        options.path = this.absPath(options.path);
-                        var subscription = this.client.newSubscription(options);
-                        var authorizer = options.authorizer || this.authorizer;
-                        if (options.jwt) {
-                            subscription.open(options.jwt);
-                        } else if (authorizer) {
-                            authorizer.authorize().then(function (jwt) {
-                                subscription.open(jwt);
-                            }).catch(function (err) {
-                                subscription.unsubscribe(err);
-                            });
-                        } else {
-                            subscription.open(null);
-                        }
-                        return subscription;
-                    };
-                    App.prototype.resumableSubscribe = function (options) {
-                        options.path = this.absPath(options.path);
-                        var authorizer = options.authorizer || this.authorizer;
-                        var resumableSubscription = this.client.newResumableSubscription(__assign({ authorizer: authorizer }, options));
-                        resumableSubscription.open();
-                        return resumableSubscription;
-                    };
-                    App.prototype.absPath = function (relativePath) {
-                        return ("/apps/" + this.appId + "/" + relativePath).replace(/\/+/g, "/").replace(/\/+$/, "");
-                    };
-                    return App;
-                }();
-                exports.App = App;
-
-                /***/
-            },
-            /* 3 */
-            /***/function (module, exports, __webpack_require__) {
-
-                "use strict";
-
                 Object.defineProperty(exports, "__esModule", { value: true });
                 var subscription_1 = __webpack_require__(1);
                 var ResumableSubscriptionState;
@@ -644,12 +577,100 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
                 exports.ResumableSubscription = ResumableSubscription;
 
                 /***/
+            },
+            /* 3 */
+            /***/function (module, exports, __webpack_require__) {
+
+                "use strict";
+
+                var __assign = this && this.__assign || Object.assign || function (t) {
+                    for (var s, i = 1, n = arguments.length; i < n; i++) {
+                        s = arguments[i];
+                        for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p)) t[p] = s[p];
+                    }
+                    return t;
+                };
+                Object.defineProperty(exports, "__esModule", { value: true });
+                var base_client_1 = __webpack_require__(0);
+                var DEFAULT_CLUSTER = "api-ceres.kube.pusherplatform.io";
+                var App = function () {
+                    function App(options) {
+                        this.serviceId = options.serviceId;
+                        this.authorizer = options.authorizer;
+                        this.client = options.client || new base_client_1.BaseClient({
+                            cluster: options.cluster || DEFAULT_CLUSTER,
+                            encrypted: options.encrypted
+                        });
+                    }
+                    App.prototype.request = function (options) {
+                        var _this = this;
+                        options.path = this.absPath(options.path);
+                        var authorizer = options.authorizer || this.authorizer;
+                        if (!options.jwt && authorizer) {
+                            return authorizer.authorize().then(function (jwt) {
+                                return _this.client.request(__assign({ jwt: jwt }, options));
+                            });
+                        } else {
+                            return this.client.request(options);
+                        }
+                    };
+                    App.prototype.subscribe = function (options) {
+                        options.path = this.absPath(options.path);
+                        var subscription = this.client.newSubscription(options);
+                        var authorizer = options.authorizer || this.authorizer;
+                        if (options.jwt) {
+                            subscription.open(options.jwt);
+                        } else if (authorizer) {
+                            authorizer.authorize().then(function (jwt) {
+                                subscription.open(jwt);
+                            }).catch(function (err) {
+                                subscription.unsubscribe(err);
+                            });
+                        } else {
+                            subscription.open(null);
+                        }
+                        return subscription;
+                    };
+                    App.prototype.resumableSubscribe = function (options) {
+                        options.path = this.absPath(options.path);
+                        var authorizer = options.authorizer || this.authorizer;
+                        var resumableSubscription = this.client.newResumableSubscription(__assign({ authorizer: authorizer }, options));
+                        resumableSubscription.open();
+                        return resumableSubscription;
+                    };
+                    App.prototype.absPath = function (relativePath) {
+                        return ("/apps/" + this.serviceId + "/" + relativePath).replace(/\/+/g, "/").replace(/\/+$/, "");
+                    };
+                    return App;
+                }();
+                exports.default = App;
+
+                /***/
+            },
+            /* 4 */
+            /***/function (module, exports, __webpack_require__) {
+
+                "use strict";
+
+                Object.defineProperty(exports, "__esModule", { value: true });
+                var app_1 = __webpack_require__(3);
+                var base_client_1 = __webpack_require__(0);
+                var resumable_subscription_1 = __webpack_require__(2);
+                var subscription_1 = __webpack_require__(1);
+                exports.default = {
+                    App: app_1.default,
+                    BaseClient: base_client_1.BaseClient,
+                    ResumableSubscription: resumable_subscription_1.ResumableSubscription,
+                    Subscription: subscription_1.Subscription
+                };
+
+                /***/
             }])
         );
     });
 });
 
-var pusherPlatform_1 = pusherPlatform.App;
+var PusherPlatform = unwrapExports(pusherPlatform);
 
 var servicePath = "services/feeds/v1/";
 var feedIdRegex = /^[a-zA-Z0-9-]+$/;
@@ -728,14 +749,12 @@ var Feed = function () {
   function Feed(_ref) {
     var app = _ref.app,
         feedId = _ref.feedId,
-        readAuthorizer = _ref.readAuthorizer,
-        writeAuthorizer = _ref.writeAuthorizer;
+        readAuthorizer = _ref.readAuthorizer;
     classCallCheck(this, Feed);
 
     this.app = app;
     this.feedId = feedId;
     this.readAuthorizer = readAuthorizer;
-    this.writeAuthorizer = writeAuthorizer;
   }
 
   createClass(Feed, [{
@@ -761,24 +780,6 @@ var Feed = function () {
           limit: limit
         }),
         authorizer: this.readAuthorizer
-      }));
-    }
-  }, {
-    key: "publish",
-    value: function publish(item) {
-      return this.publishBatch([item]);
-    }
-  }, {
-    key: "publishBatch",
-    value: function publishBatch(items) {
-      if (!Array.isArray(items)) {
-        throw new TypeError("items must be an array");
-      }
-      return parseResponse(this.app.request({
-        method: "POST",
-        path: this.itemsPath,
-        body: { items: items },
-        authorizer: this.writeAuthorizer
       }));
     }
   }, {
@@ -835,6 +836,7 @@ var FeedsAuthorizer = function () {
           if (xhr.status === 200) {
             resolve(JSON.parse(xhr.responseText));
           } else {
+            // TODO make sure this error gets bubbled up from the platform library
             reject(new Error("Couldn't get token from " + _this2.authEndpoint + "; got " + xhr.status + " " + xhr.statusText + "."));
           }
         });
@@ -869,9 +871,8 @@ var PusherFeeds = function () {
         type: "ADMIN"
       })
     });
-    // TODO appId -> serviceId upstream
-    this.app = new pusherPlatform_1({
-      appId: options.serviceId,
+    this.app = new PusherPlatform.App({
+      serviceId: options.serviceId,
       cluster: options.cluster,
       authorizer: this.authorizer
     });
@@ -892,10 +893,9 @@ var PusherFeeds = function () {
     }
   }, {
     key: "feed",
-    value: function feed(options) {
-      options = options || {};
-      if (!options.feedId || !options.feedId.match(feedIdRegex)) {
-        throw new TypeError("Invalid feedId: " + options.feedId);
+    value: function feed(feedId) {
+      if (!feedId || !feedId.match(feedIdRegex)) {
+        throw new TypeError("Invalid feedId: " + feedId);
       }
       var readAuthorizer = feedId.startsWith("private-") ? new FeedsAuthorizer({
         authEndpoint: this.authEndpoint,
@@ -904,18 +904,10 @@ var PusherFeeds = function () {
           type: "READ"
         })
       }) : null;
-      var writeAuthorizer = new FeedsAuthorizer({
-        authEndpoint: this.authEndpoint,
-        authData: _extends({}, this.authData, {
-          feed_id: feedId,
-          type: "WRITE"
-        })
-      });
       return new Feed({
         app: this.app,
         feedId: feedId,
-        readAuthorizer: readAuthorizer,
-        writeAuthorizer: writeAuthorizer
+        readAuthorizer: readAuthorizer
       });
     }
   }, {
