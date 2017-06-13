@@ -51,7 +51,7 @@ Takes a single options object with the following properties.
   `api-ceres.kube.pusherplatform.io`
 
 - `authEndpiont`: [optional] the endpoint to use to request tokens for access
-  to private channels; see [auth docs](TODO)
+  to private feeds; see [auth docs](TODO)
 
 - `authData`: [optional] data to pass to the auth endpoint along with token
   requests
