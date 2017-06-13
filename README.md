@@ -91,7 +91,7 @@ queries can then be made. Takes a `feedId`.
 
 ### `feed.subscribe`
 
-Subscribe to reveive new items published to `feed`. A subscription can be
+Subscribe to receive new items published to `feed`. A subscription can be
 resumed from some previously seen item by providing a `lastEventId`, or can be
 initiated with some initial state by providing a `tailSize`. Private feeds require `READ` permission – see [auth docs](TODO). Takes a single
 options object with the following properties.
