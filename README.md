@@ -29,7 +29,7 @@ const pusherFeeds = new PusherFeeds({ serviceId: your_service_id });
 Create a feed object:
 
 ```js
-const yourFeed = pusherFeeds.feed({ feedId: your_feed_id });
+const yourFeed = pusherFeeds.feed(your_feed_id);
 ```
 
 Subscribe to your feed, and log new events:
@@ -89,10 +89,7 @@ Returns a `subscription` object with an `unsubscribe` method.
 ### `pusherFeeds.feed`
 
 Returns a reference to a particular feed, from which subscriptions and history
-queries can then be made. Takes a single options object with the following
-properties.
-
-- `feedId`: [required] the unique identifier of the feed
+queries can then be made. Takes a `feedId`.
 
 ### `feed.subscribe`
 
@@ -162,11 +159,3 @@ the following format.
   ]
 }
 ```
-
-### `feed.publish`
-
-Publish an item to a feed. Requires `WRITE` permission – see [auth docs](TODO). Takes a single `item` parameter, published to the feed as JSON.
-
-### `feed.publishBatch`
-
-As above, but takes a list of `items`, publishing each in turn.
