@@ -84,8 +84,6 @@ properties
 - `onError`: [optional] callback to fire when the subscription is closed with
   error
 
-Returns a `subscription` object with an `unsubscribe` method.
-
 ### `pusherFeeds.feed`
 
 Returns a reference to a particular feed, from which subscriptions and history
