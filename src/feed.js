@@ -14,6 +14,7 @@ export default class Feed {
         tail_size: options.tailSize,
       }),
       authorizer: this.readAuthorizer,
+      onEvent: options.onItem,
       ...options,
     });
   }

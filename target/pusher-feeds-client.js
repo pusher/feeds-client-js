@@ -764,7 +764,8 @@ var Feed = function () {
         path: this.itemsPath + queryString({
           tail_size: options.tailSize
         }),
-        authorizer: this.readAuthorizer
+        authorizer: this.readAuthorizer,
+        onEvent: options.onItem
       }, options));
     }
   }, {

@@ -32,10 +32,10 @@ Create a feed object:
 const yourFeed = pusherFeeds.feed(your_feed_id);
 ```
 
-Subscribe to your feed, and log new events:
+Subscribe to your feed, and log new items:
 
 ```js
-yourFeed.subscribe({ onEvent: console.log });
+yourFeed.subscribe({ onItem: console.log });
 ```
 
 ## Reference
@@ -94,23 +94,22 @@ queries can then be made. Takes a `feedId`.
 ### `feed.subscribe`
 
 Subscribe to reveive new items published to `feed`. A subscription can be
-resumed from some previously seen event by providing a `lastEventId`, or can be
+resumed from some previously seen item by providing a `lastEventId`, or can be
 initiated with some initial state by providing a `tailSize`. Private feeds require `READ` permission – see [auth docs](TODO). Takes a single
 options object with the following properties.
 
 - `lastEventId`: [optional] retrieve every item published after `lastEventId`,
-  and then live events as they happen
+  and then live items as they are published
 
 - `tailSize`: [optional] if this parameter is provided, then the most recent
-  `tailSize` events will be retrieved, followed by live events as they happen
-  (`lastEventId` takes precedence if both are provided)
+  `tailSize` items will be retrieved, followed by live items as they are
+  published (`lastEventId` takes precedence if both are provided)
 
 - `onOpending`: [optional] callback to fire when the subscription is opening
 
 - `onOpen`: [optional] callback to fire when the subscription is open
 
-- `onEvent`: [optional] callback to handle events, takes each event as a
-  parameter
+- `onItem`: [optional] callback to handle items, takes each item as a parameter
 
 - `onEnd`: [optional] callback to fire when the subscription ends normally
 
@@ -119,7 +118,7 @@ options object with the following properties.
 
 Returns a `subscription` object with an `unsubscribe` method.
 
-Events are passed to the `onEvent` callback with the following format
+Items are passed to the `onItem` callback with the following format
 
 ```js
 {
