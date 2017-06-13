@@ -44,8 +44,8 @@ export default class FeedsAuthorizer {
       });
       xhr.setRequestHeader("content-type", "application/x-www-form-urlencoded");
       xhr.send(urlEncode({
-        grant_type: "client_credentials",
         ...this.authData,
+        grant_type: "client_credentials",
       }));
     });
   }

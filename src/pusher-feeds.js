@@ -12,11 +12,20 @@ export default class PusherFeeds {
     if (!options.serviceId || !options.serviceId.match(serviceIdRegex)) {
       throw new TypeError(`Invalid serviceId: ${ options.serviceId }`);
     }
-    this.authorizer = new FeedsAuthorizer({
+    this.listAuthorizer = new FeedsAuthorizer({
       authEndpoint: this.authEndpoint,
       authData: {
         ...this.authData,
-        type: "ADMIN",
+        path: "feeds",
+        action: "READ",
+      }
+    });
+    this.firehoseAuthorizer = new FeedsAuthorizer({
+      authEndpoint: this.authEndpoint,
+      authData: {
+        ...this.authData,
+        path: "firehose/items",
+        action: "READ",
       }
     });
     this.app = new PusherPlatform.App({
@@ -34,7 +43,7 @@ export default class PusherFeeds {
         prefix: options.prefix,
         limit: options.limit,
       }),
-      authorizer: this.authorizer,
+      authorizer: this.listAuthorizer,
     }));
   }
 
@@ -46,8 +55,8 @@ export default class PusherFeeds {
       authEndpoint:  this.authEndpoint,
       authData: {
         ...this.authData,
-        feed_id: feedId,
-        type: "READ",
+        path: `feeds/${ feedId }/items`,
+        action: "READ",
       }
     }) : null;
     return new Feed({
@@ -60,9 +69,9 @@ export default class PusherFeeds {
   firehose(options) {
     // TODO wrap onEvent to expose onPublish, onSubscribe, and onUnsubscribe
     return this.app.subscribe({
-      path: `${ servicePath }/firehose/items`,
-      authorizer: this.authorizer,
       ...options,
+      path: `${ servicePath }/firehose/items`,
+      authorizer: this.firehoseAuthorizer,
     });
   }
 }

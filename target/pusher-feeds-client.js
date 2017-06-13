@@ -760,13 +760,13 @@ var Feed = function () {
   createClass(Feed, [{
     key: "subscribe",
     value: function subscribe(options) {
-      return this.app.resumableSubscribe(_extends({
+      return this.app.resumableSubscribe(_extends({}, options, {
         path: this.itemsPath + queryString({
           tail_size: options.tailSize
         }),
         authorizer: this.readAuthorizer,
         onEvent: options.onItem
-      }, options));
+      }));
     }
   }, {
     key: "getHistory",
@@ -842,9 +842,9 @@ var FeedsAuthorizer = function () {
           }
         });
         xhr.setRequestHeader("content-type", "application/x-www-form-urlencoded");
-        xhr.send(urlEncode(_extends({
+        xhr.send(urlEncode(_extends({}, _this2.authData, {
           grant_type: "client_credentials"
-        }, _this2.authData)));
+        })));
       });
     }
   }, {
@@ -866,10 +866,18 @@ var PusherFeeds = function () {
     if (!options.serviceId || !options.serviceId.match(serviceIdRegex)) {
       throw new TypeError("Invalid serviceId: " + options.serviceId);
     }
-    this.authorizer = new FeedsAuthorizer({
+    this.listAuthorizer = new FeedsAuthorizer({
       authEndpoint: this.authEndpoint,
       authData: _extends({}, this.authData, {
-        type: "ADMIN"
+        path: "feeds",
+        action: "READ"
+      })
+    });
+    this.firehoseAuthorizer = new FeedsAuthorizer({
+      authEndpoint: this.authEndpoint,
+      authData: _extends({}, this.authData, {
+        path: "firehose/items",
+        action: "READ"
       })
     });
     this.app = new PusherPlatform.App({
@@ -889,7 +897,7 @@ var PusherFeeds = function () {
           prefix: options.prefix,
           limit: options.limit
         }),
-        authorizer: this.authorizer
+        authorizer: this.listAuthorizer
       }));
     }
   }, {
@@ -901,8 +909,8 @@ var PusherFeeds = function () {
       var readAuthorizer = feedId.startsWith("private-") ? new FeedsAuthorizer({
         authEndpoint: this.authEndpoint,
         authData: _extends({}, this.authData, {
-          feed_id: feedId,
-          type: "READ"
+          path: "feeds/" + feedId + "/items",
+          action: "READ"
         })
       }) : null;
       return new Feed({
@@ -915,10 +923,10 @@ var PusherFeeds = function () {
     key: "firehose",
     value: function firehose(options) {
       // TODO wrap onEvent to expose onPublish, onSubscribe, and onUnsubscribe
-      return this.app.subscribe(_extends({
+      return this.app.subscribe(_extends({}, options, {
         path: servicePath + "/firehose/items",
-        authorizer: this.authorizer
-      }, options));
+        authorizer: this.firehoseAuthorizer
+      }));
     }
   }]);
   return PusherFeeds;

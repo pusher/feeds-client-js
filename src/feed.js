@@ -10,12 +10,12 @@ export default class Feed {
 
   subscribe(options) {
     return this.app.resumableSubscribe({
+      ...options,
       path: this.itemsPath + queryString({
         tail_size: options.tailSize,
       }),
       authorizer: this.readAuthorizer,
       onEvent: options.onItem,
-      ...options,
     });
   }
 
