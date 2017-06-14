@@ -131,7 +131,8 @@ Items are passed to the `onItem` callback with the following format
 
 ### `feed.getHistory`
 
-Query a `feed` for historical items. Private feeds require `READ` permission – see [auth docs](TODO). Takes a single options object with the
+Query a `feed` for historical items. Private feeds require `READ` permission –
+see [auth docs](TODO). Takes a single (optional) options object with the
 following properties.
 
 - `fromId`: [optional] look back in the past from this ID; retrieves items
