@@ -691,8 +691,10 @@ function parseResponse(promise) {
 }
 
 function urlEncode(data) {
-  return Object.keys(data).map(function (key) {
-    return data[key] != undefined ? key + "=" + encodeURIComponent(data[key]) : "";
+  return Object.keys(data).filter(function (key) {
+    return data[key] !== undefined;
+  }).map(function (key) {
+    return key + "=" + encodeURIComponent(data[key]);
   }).join("&");
 }
 
@@ -759,7 +761,9 @@ var Feed = function () {
 
   createClass(Feed, [{
     key: "subscribe",
-    value: function subscribe(options) {
+    value: function subscribe() {
+      var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
       return this.app.resumableSubscribe(_extends({}, options, {
         path: this.itemsPath + queryString({
           tail_size: options.tailSize
@@ -770,9 +774,11 @@ var Feed = function () {
     }
   }, {
     key: "getHistory",
-    value: function getHistory(_ref2) {
-      var fromId = _ref2.fromId,
-          limit = _ref2.limit;
+    value: function getHistory() {
+      var _ref2 = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
+          fromId = _ref2.fromId,
+          _ref2$limit = _ref2.limit,
+          limit = _ref2$limit === undefined ? 50 : _ref2$limit;
 
       return parseResponse(this.app.request({
         method: "GET",
@@ -857,14 +863,20 @@ var FeedsAuthorizer = function () {
 }();
 
 var PusherFeeds = function () {
-  function PusherFeeds(options) {
+  function PusherFeeds() {
+    var _ref = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
+        serviceId = _ref.serviceId,
+        cluster = _ref.cluster,
+        _ref$authData = _ref.authData,
+        authData = _ref$authData === undefined ? {} : _ref$authData,
+        authEndpoint = _ref.authEndpoint;
+
     classCallCheck(this, PusherFeeds);
 
-    options = options || {};
-    this.authData = options.authData || {};
-    this.authEndpoint = options.authEndpoint;
-    if (!options.serviceId || !options.serviceId.match(serviceIdRegex)) {
-      throw new TypeError("Invalid serviceId: " + options.serviceId);
+    this.authData = authData;
+    this.authEndpoint = authEndpoint;
+    if (!serviceId || !serviceId.match(serviceIdRegex)) {
+      throw new TypeError("Invalid serviceId: " + serviceId);
     }
     this.listAuthorizer = new FeedsAuthorizer({
       authEndpoint: this.authEndpoint,
@@ -880,23 +892,19 @@ var PusherFeeds = function () {
         action: "READ"
       })
     });
-    this.app = new PusherPlatform.App({
-      serviceId: options.serviceId,
-      cluster: options.cluster,
-      authorizer: this.authorizer
-    });
+    this.app = new PusherPlatform.App({ serviceId: serviceId, cluster: cluster });
   }
 
   createClass(PusherFeeds, [{
     key: "list",
-    value: function list(options) {
-      options = options || {};
+    value: function list() {
+      var _ref2 = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
+          prefix = _ref2.prefix,
+          limit = _ref2.limit;
+
       return parseResponse(this.app.request({
         method: "GET",
-        path: servicePath + "/feeds" + queryString({
-          prefix: options.prefix,
-          limit: options.limit
-        }),
+        path: servicePath + "/feeds" + queryString({ prefix: prefix, limit: limit }),
         authorizer: this.listAuthorizer
       }));
     }

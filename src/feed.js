@@ -8,7 +8,7 @@ export default class Feed {
     this.readAuthorizer = readAuthorizer;
   }
 
-  subscribe(options) {
+  subscribe(options = {}) {
     return this.app.resumableSubscribe({
       ...options,
       path: this.itemsPath + queryString({
@@ -19,7 +19,7 @@ export default class Feed {
     });
   }
 
-  getHistory({ fromId, limit }) {
+  getHistory({ fromId, limit = 50 } = {}) {
     return parseResponse(this.app.request({
       method: "GET",
       path: this.itemsPath + queryString({

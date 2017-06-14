@@ -5,12 +5,11 @@ import { servicePath, feedIdRegex, serviceIdRegex } from "./constants";
 import { parseResponse, queryString } from "./utils";
 
 export default class PusherFeeds {
-  constructor(options) {
-    options = options || {};
-    this.authData = options.authData || {};
-    this.authEndpoint = options.authEndpoint;
-    if (!options.serviceId || !options.serviceId.match(serviceIdRegex)) {
-      throw new TypeError(`Invalid serviceId: ${ options.serviceId }`);
+  constructor({ serviceId, cluster, authData = {}, authEndpoint } = {}) {
+    this.authData = authData;
+    this.authEndpoint = authEndpoint;
+    if (!serviceId || !serviceId.match(serviceIdRegex)) {
+      throw new TypeError(`Invalid serviceId: ${ serviceId }`);
     }
     this.listAuthorizer = new FeedsAuthorizer({
       authEndpoint: this.authEndpoint,
@@ -28,21 +27,13 @@ export default class PusherFeeds {
         action: "READ",
       }
     });
-    this.app = new PusherPlatform.App({
-      serviceId: options.serviceId,
-      cluster: options.cluster,
-      authorizer: this.authorizer,
-    });
+    this.app = new PusherPlatform.App({ serviceId, cluster });
   }
 
-  list(options) {
-    options = options || {};
+  list({ prefix, limit } = {}) {
     return parseResponse(this.app.request({
       method: "GET",
-      path: `${ servicePath }/feeds` + queryString({
-        prefix: options.prefix,
-        limit: options.limit,
-      }),
+      path: `${ servicePath }/feeds` + queryString({ prefix, limit }),
       authorizer: this.listAuthorizer,
     }));
   }

@@ -11,10 +11,10 @@ export function parseResponse(promise) {
 }
 
 export function urlEncode(data) {
-  return Object.keys(data).map(key => {
-    return data[key] != undefined ?
-      `${ key }=${ encodeURIComponent(data[key]) }` : "";
-  }).join("&");
+  return Object.keys(data)
+    .filter(key => data[key] !== undefined)
+    .map(key => `${ key }=${ encodeURIComponent(data[key]) }`)
+    .join("&");
 }
 
 export function queryString(data) {
