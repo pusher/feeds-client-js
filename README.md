@@ -29,13 +29,13 @@ const pusherFeeds = new PusherFeeds({ serviceId: your_service_id });
 Create a feed object:
 
 ```js
-const yourFeed = pusherFeeds.feed({ feedId: your_feed_id });
+const yourFeed = pusherFeeds.feed(your_feed_id);
 ```
 
-Subscribe to your feed, and log new events:
+Subscribe to your feed, and log new items:
 
 ```js
-yourFeed.subscribe({ onEvent: console.log });
+yourFeed.subscribe({ onItem: console.log });
 ```
 
 ## Reference
@@ -51,41 +51,26 @@ Takes a single options object with the following properties.
   `api-ceres.kube.pusherplatform.io`
 
 - `authEndpiont`: [optional] the endpoint to use to request tokens for access
-  to private channels; see [TODO](auth docs)
+  to private feeds; see [auth docs](TODO)
 
-### `pusherFeeds.feed`
+- `authData`: [optional] data to pass to the auth endpoint along with token
+  requests
 
-Returns a reference to a particular feed, from which subscriptions and history
-queries can then be made. Takes a single options object with the following
-properties.
+### `pusherFeeds.list`
 
-- `feedId`: [required] the unique identifier of the feed
+List non-empty feeds. This method requires `ADMIN` permission – see [auth
+docs](TODO). Takes a single options object with the following properties.
 
-- `authorizer`: [optional] provide a custom authorizer for this feed (advanced
-  usage, you probably just want to provide an `authEndpiont` in the
-  `PusherFeeds` constructor!) [NOTE in fact, should we actually remove, or at
-  least not document this? and the below property? It might cause unnecessary
-  confusion... We are possibly making thing unnecessarily configurable too
-  early]
+- `prefix`: [optional] only return those feeds that start with this string
 
-- `authEndpoint`: [optional] the endpiont to use to request tokens for access
-  to _this specific feed_ (advanced usage, in most cases you will use the same
-  endpoint for all feeds, so you probably want to set this property in the
-  `PusherFeeds` constructor instead!) [NOTE see above]
+- `limit`: [optional] return at most this many matches
 
-### `feed.subscribe`
+### `pusherFeeds.firehose`
 
-Subscribe to reveive new items published to `feed`. A subscription can be
-resumed from some previously seen event by providing a `lastEventId`, or can be
-initiated with some initial state by providing a `tailSize`. Takes a single
-options object with the following properties.
-
-- `lastEventId`: [optional] retrieve every item published after `lastEventId`,
-  and then live events as they happen
-
-- `tailSize`: [optional] if this parameter is provided, then the most recent
-  `tailSize` events will be retrieved, followed by live events as they happen
-  (`lastEventId` takes precedence if both are provided)
+Subscribe to the firehose for this provisioned service to see all events and
+subscriptions on a single subscription. This method requires `ADMIN` permission
+– see [auth docs](TODO). Takes a single options object with the following
+properties
 
 - `onOpending`: [optional] callback to fire when the subscription is opening
 
@@ -99,9 +84,39 @@ options object with the following properties.
 - `onError`: [optional] callback to fire when the subscription is closed with
   error
 
+### `pusherFeeds.feed`
+
+Returns a reference to a particular feed, from which subscriptions and history
+queries can then be made. Takes a `feedId`.
+
+### `feed.subscribe`
+
+Subscribe to receive new items published to `feed`. A subscription can be
+resumed from some previously seen item by providing a `lastEventId`, or can be
+initiated with some initial state by providing a `tailSize`. Private feeds require `READ` permission – see [auth docs](TODO). Takes a single
+options object with the following properties.
+
+- `lastEventId`: [optional] retrieve every item published after `lastEventId`,
+  and then live items as they are published
+
+- `tailSize`: [optional] if this parameter is provided, then the most recent
+  `tailSize` items will be retrieved, followed by live items as they are
+  published (`lastEventId` takes precedence if both are provided)
+
+- `onOpending`: [optional] callback to fire when the subscription is opening
+
+- `onOpen`: [optional] callback to fire when the subscription is open
+
+- `onItem`: [optional] callback to handle items, takes each item as a parameter
+
+- `onEnd`: [optional] callback to fire when the subscription ends normally
+
+- `onError`: [optional] callback to fire when the subscription is closed with
+  error
+
 Returns a `subscription` object with an `unsubscribe` method.
 
-Events are passed to the `onEvent` callback with the following format
+Items are passed to the `onItem` callback with the following format
 
 ```js
 {
@@ -116,7 +131,8 @@ Events are passed to the `onEvent` callback with the following format
 
 ### `feed.getHistory`
 
-Query a `feed` for historical items. Takes a single options object with the
+Query a `feed` for historical items. Private feeds require `READ` permission –
+see [auth docs](TODO). Takes a single (optional) options object with the
 following properties.
 
 - `fromId`: [optional] look back in the past from this ID; retrieves items

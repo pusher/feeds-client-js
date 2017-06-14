@@ -1,18 +1,14 @@
-const cacheExpiryTolerance = 60;
-const defaultAuthEndpoint = "/feeds/tokens";
-
-function requestBody(feedId) {
-  return `grant_type=client_credentials&feed_id=${ feedId }&type=READ`;
-}
+import { cacheExpiryTolerance, defaultAuthEndpoint } from "./constants";
+import { urlEncode } from "./utils";
 
 function now() {
   return Math.floor(Date.now() / 1000);
 }
 
-export default class FeedAuthorizer {
-  constructor({ feedId, authEndpoint }) {
-    this.feedId = feedId;
+export default class FeedsAuthorizer {
+  constructor({ authEndpoint, authData }) {
     this.authEndpoint = authEndpoint || defaultAuthEndpoint;
+    this.authData = authData;
   }
 
   authorize() {
@@ -42,11 +38,15 @@ export default class FeedAuthorizer {
         if (xhr.status === 200) {
           resolve(JSON.parse(xhr.responseText));
         } else {
+          // TODO make sure this error gets bubbled up from the platform library
           reject(new Error(`Couldn't get token from ${ this.authEndpoint }; got ${ xhr.status } ${ xhr.statusText }.`));
         }
       });
       xhr.setRequestHeader("content-type", "application/x-www-form-urlencoded");
-      xhr.send(requestBody(this.feedId));
+      xhr.send(urlEncode({
+        ...this.authData,
+        grant_type: "client_credentials",
+      }));
     });
   }
 }

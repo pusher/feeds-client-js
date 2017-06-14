@@ -1,49 +1,33 @@
-const servicePath = "services/feeds/v1/";
+import { servicePath } from "./constants";
+import { parseResponse, queryString } from "./utils";
 
 export default class Feed {
-  constructor({ app, feedId, authorizer }) {
+  constructor({ app, feedId, readAuthorizer }) {
     this.app = app;
     this.feedId = feedId;
-    this.authorizer = authorizer;
+    this.readAuthorizer = readAuthorizer;
   }
 
-  subscribe(options) {
-    let queryString = "";
-    if (options.tailSize) {
-      queryString = `?tail_size=${ options.tailSize }`;
-    }
+  subscribe(options = {}) {
     return this.app.resumableSubscribe({
-      path: this.itemsPath + queryString,
-      authorizer: this.authorizer,
       ...options,
+      path: this.itemsPath + queryString({
+        tail_size: options.tailSize,
+      }),
+      authorizer: this.readAuthorizer,
+      onEvent: options.onItem,
     });
   }
 
-  getHistory(options) {
-    let queryString = "";
-    let queryParams = [];
-    if (options && options.fromId) {
-      queryParams.push(`from_id=${ options.fromId }`);
-    }
-    if (options && options.limit) {
-      queryParams.push(`limit=${ options.limit }`);
-    }
-    if (queryParams.length > 0) {
-      queryString = `?${ queryParams.join("&") }`;
-    }
-    return new Promise((resolve, reject) => {
-      return this.app.request({
-        method: "GET",
-        path: this.itemsPath + queryString,
-        authorizer: this.authorizer,
-      }).then(response => {
-        try {
-          resolve(JSON.parse(response));
-        } catch (err) {
-          reject(err);
-        }
-      }).catch(reject);
-    });
+  getHistory({ fromId, limit = 50 } = {}) {
+    return parseResponse(this.app.request({
+      method: "GET",
+      path: this.itemsPath + queryString({
+        from_id: fromId,
+        limit: limit,
+      }),
+      authorizer: this.readAuthorizer,
+    }));
   }
 
   get itemsPath() {
