@@ -1030,7 +1030,6 @@ var TokenProvider = function () {
           if (xhr.status === 200) {
             resolve(JSON.parse(xhr.responseText));
           } else {
-            // TODO make sure this error gets bubbled up from the platform library
             reject(new Error("Couldn't get token from " + _this2.authEndpoint + "; got " + xhr.status + " " + xhr.statusText + "."));
           }
         });

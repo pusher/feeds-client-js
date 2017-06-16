@@ -38,7 +38,6 @@ export default class TokenProvider {
         if (xhr.status === 200) {
           resolve(JSON.parse(xhr.responseText));
         } else {
-          // TODO make sure this error gets bubbled up from the platform library
           reject(new Error(`Couldn't get token from ${ this.authEndpoint }; got ${ xhr.status } ${ xhr.statusText }.`));
         }
       });
