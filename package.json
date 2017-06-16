@@ -12,6 +12,9 @@
     "type": "git",
     "url": "git+https://github.com/pusher/feeds-client-js.git"
   },
+  "dependencies": {
+    "pusher-platform-js": "^0.3.1"
+  },
   "devDependencies": {
     "babel-plugin-external-helpers": "^6.22.0",
     "babel-plugin-transform-object-rest-spread": "^6.23.0",
@@ -26,8 +29,5 @@
     "build": "rollup -c",
     "dev": "rollup -c -w"
   },
-  "version": "0.1.0",
-  "dependencies": {
-    "pusher-platform-js": "git+https://github.com/pusher/pusher-platform-js"
-  }
+  "version": "0.1.0"
 }

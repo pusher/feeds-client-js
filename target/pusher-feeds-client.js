@@ -8,9 +8,7 @@ var commonjsGlobal = typeof window !== 'undefined' ? window : typeof global !== 
 
 
 
-function unwrapExports (x) {
-	return x && x.__esModule ? x['default'] : x;
-}
+
 
 function createCommonjsModule(fn, module) {
 	return module = { exports: {} }, fn(module, module.exports), module.exports;
@@ -99,7 +97,7 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
                 /******/__webpack_require__.p = "";
                 /******/
                 /******/ // Load entry module and return exports
-                /******/return __webpack_require__(__webpack_require__.s = 4);
+                /******/return __webpack_require__(__webpack_require__.s = 5);
                 /******/
             }(
             /************************************************************************/
@@ -109,6 +107,20 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
 
                 "use strict";
 
+                var __extends = this && this.__extends || function () {
+                    var extendStatics = Object.setPrototypeOf || { __proto__: [] } instanceof Array && function (d, b) {
+                        d.__proto__ = b;
+                    } || function (d, b) {
+                        for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+                    };
+                    return function (d, b) {
+                        extendStatics(d, b);
+                        function __() {
+                            this.constructor = d;
+                        }
+                        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+                    };
+                }();
                 Object.defineProperty(exports, "__esModule", { value: true });
                 var subscription_1 = __webpack_require__(1);
                 var resumable_subscription_1 = __webpack_require__(2);
@@ -130,15 +142,31 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
                     return headers;
                 }
                 exports.responseHeadersObj = responseHeadersObj;
-                var ErrorResponse = function () {
-                    function ErrorResponse(xhr) {
-                        this.statusCode = xhr.status;
-                        this.headers = responseHeadersObj(xhr.getAllResponseHeaders());
-                        this.info = xhr.responseText;
+                var ErrorResponse = function (_super) {
+                    __extends(ErrorResponse, _super);
+                    function ErrorResponse(statusCode, headers, info) {
+                        var _this = _super.call(this, "ErroResponse: " + statusCode + ": " + info + " \n Headers: " + JSON.stringify(headers)) || this;
+                        _this.statusCode = statusCode;
+                        _this.headers = headers;
+                        _this.info = info;
+                        return _this;
                     }
+                    ErrorResponse.fromXHR = function (xhr) {
+                        return new ErrorResponse(xhr.status, responseHeadersObj(xhr.getAllResponseHeaders()), xhr.responseText);
+                    };
                     return ErrorResponse;
-                }();
+                }(Error);
                 exports.ErrorResponse = ErrorResponse;
+                var NetworkError = function (_super) {
+                    __extends(NetworkError, _super);
+                    function NetworkError(error) {
+                        var _this = _super.call(this) || this;
+                        _this.error = error;
+                        return _this;
+                    }
+                    return NetworkError;
+                }(Error);
+                exports.NetworkError = NetworkError;
                 // Follows https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest/readyState
                 var XhrReadyState;
                 (function (XhrReadyState) {
@@ -163,7 +191,7 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
                                     if (xhr.status === 200) {
                                         resolve(xhr.responseText);
                                     } else {
-                                        reject(new ErrorResponse(xhr));
+                                        reject(ErrorResponse.fromXHR(xhr));
                                     }
                                 }
                             };
@@ -330,17 +358,14 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
                                     if (_this.state === SubscriptionState.ENDED) {
                                         // We aborted the request deliberately, and called onError/onEnd elsewhere.
                                     } else {
-                                        // The server
-                                        if (_this.options.onError) {
-                                            _this.options.onError(new Error("error from server: " + _this.xhr.responseText));
-                                        }
+                                        _this.options.onError(base_client_1.ErrorResponse.fromXHR(_this.xhr));
                                     }
                                 }
                             }
                         };
-                        xhr.onerror = function () {
+                        xhr.onerror = function (event) {
                             if (_this.options.onError) {
-                                _this.options.onError(new Error("resumable"));
+                                _this.options.onError(new base_client_1.NetworkError(event));
                             }
                         };
                     }
@@ -436,6 +461,7 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
                             return new Error("Invalid EOS Headers");
                         }
                         this.state = SubscriptionState.ENDING;
+                        return new base_client_1.ErrorResponse(statusCode, headers, info);
                     };
                     Subscription.prototype.unsubscribe = function (err) {
                         this.state = SubscriptionState.ENDED;
@@ -463,6 +489,7 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
 
                 Object.defineProperty(exports, "__esModule", { value: true });
                 var subscription_1 = __webpack_require__(1);
+                var retry_strategy_1 = __webpack_require__(6);
                 var ResumableSubscriptionState;
                 (function (ResumableSubscriptionState) {
                     ResumableSubscriptionState[ResumableSubscriptionState["UNOPENED"] = 0] = "UNOPENED";
@@ -496,9 +523,10 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
                         this.xhrSource = xhrSource;
                         this.options = options;
                         this.state = ResumableSubscriptionState.UNOPENED;
-                        this.delayMillis = 0;
+                        this.retryStrategy = new retry_strategy_1.ExponentialBackoffRetryStrategy({});
                         this.assertState = assertState.bind(this, ResumableSubscriptionState);
                         this.lastEventIdReceived = options.lastEventId;
+                        this.logger = options.logger;
                     }
                     ResumableSubscription.prototype.tryNow = function () {
                         var _this = this;
@@ -529,45 +557,30 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
                                 }
                             },
                             onError: function (error) {
-                                if (_this.isResumableError(error)) {
-                                    _this.state = ResumableSubscriptionState.OPENING;
-                                    if (_this.options.onOpening) {
-                                        _this.options.onOpening();
-                                    }
-                                    _this.backoff();
-                                } else {
+                                _this.state = ResumableSubscriptionState.OPENING;
+                                _this.retryStrategy.attemptRetry(error).then(function () {
+                                    _this.tryNow;
+                                }).catch(function (error) {
                                     _this.state = ResumableSubscriptionState.ENDED;
                                     if (_this.options.onError) {
                                         _this.options.onError(error);
                                     }
-                                }
-                            }
+                                });
+                            },
+                            logger: this.logger
                         });
-                        if (this.options.authorizer) {
-                            this.options.authorizer.authorize().then(function (jwt) {
+                        if (this.options.tokenProvider) {
+                            this.options.tokenProvider.fetchToken().then(function (jwt) {
                                 _this.subscription.open(jwt);
                             }).catch(function (err) {
-                                // This is a resumable error?
-                                console.log("Error getting auth token; backing off");
-                                _this.backoff();
+                                if (_this.options.onError) _this.options.onError(err);
                             });
                         } else {
                             this.subscription.open(null);
                         }
                     };
-                    ResumableSubscription.prototype.backoff = function () {
-                        var _this = this;
-                        this.delayMillis = this.delayMillis * 2 + 1000;
-                        console.log("Trying reconnect in " + this.delayMillis + " ms.");
-                        window.setTimeout(function () {
-                            _this.tryNow();
-                        }, this.delayMillis);
-                    };
                     ResumableSubscription.prototype.open = function () {
                         this.tryNow();
-                    };
-                    ResumableSubscription.prototype.isResumableError = function (error) {
-                        return error.message === "resumable"; // TODO this is a horrible way to represent resumableness
                     };
                     ResumableSubscription.prototype.unsubscribe = function () {
                         this.subscription.unsubscribe(); // We'll get onEnd and bubble this up
@@ -583,6 +596,71 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
 
                 "use strict";
 
+                Object.defineProperty(exports, "__esModule", { value: true });
+                var LogLevel;
+                (function (LogLevel) {
+                    LogLevel[LogLevel["VERBOSE"] = 1] = "VERBOSE";
+                    LogLevel[LogLevel["DEBUG"] = 2] = "DEBUG";
+                    LogLevel[LogLevel["INFO"] = 3] = "INFO";
+                    LogLevel[LogLevel["WARNING"] = 4] = "WARNING";
+                    LogLevel[LogLevel["ERROR"] = 5] = "ERROR";
+                })(LogLevel = exports.LogLevel || (exports.LogLevel = {}));
+                var DefaultLogger = function () {
+                    function DefaultLogger(treshold) {
+                        if (treshold === void 0) {
+                            treshold = 2;
+                        }
+                        this.treshold = treshold;
+                    }
+                    DefaultLogger.prototype.log = function (level, message, error) {
+                        if (level >= this.treshold) {
+                            console.log(message);
+                            if (error) {
+                                console.log(error);
+                            }
+                        }
+                    };
+                    DefaultLogger.prototype.verbose = function (message, error) {
+                        this.log(LogLevel.VERBOSE, message, error);
+                    };
+                    DefaultLogger.prototype.debug = function (message, error) {
+                        this.log(LogLevel.DEBUG, message, error);
+                    };
+                    DefaultLogger.prototype.info = function (message, error) {
+                        this.log(LogLevel.INFO, message, error);
+                    };
+                    DefaultLogger.prototype.warn = function (message, error) {
+                        this.log(LogLevel.WARNING, message, error);
+                    };
+                    DefaultLogger.prototype.error = function (message, error) {
+                        this.log(LogLevel.ERROR, message, error);
+                    };
+                    return DefaultLogger;
+                }();
+                exports.DefaultLogger = DefaultLogger;
+                var EmptyLogger = function () {
+                    function EmptyLogger() {}
+                    EmptyLogger.prototype.verbose = function (message, error) {};
+                    
+                    EmptyLogger.prototype.debug = function (message, error) {};
+                    
+                    EmptyLogger.prototype.info = function (message, error) {};
+                    
+                    EmptyLogger.prototype.warn = function (message, error) {};
+                    
+                    EmptyLogger.prototype.error = function (message, error) {};
+                    
+                    return EmptyLogger;
+                }();
+                exports.EmptyLogger = EmptyLogger;
+
+                /***/
+            },
+            /* 4 */
+            /***/function (module, exports, __webpack_require__) {
+
+                "use strict";
+
                 var __assign = this && this.__assign || Object.assign || function (t) {
                     for (var s, i = 1, n = arguments.length; i < n; i++) {
                         s = arguments[i];
@@ -592,22 +670,28 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
                 };
                 Object.defineProperty(exports, "__esModule", { value: true });
                 var base_client_1 = __webpack_require__(0);
+                var logger_1 = __webpack_require__(3);
                 var DEFAULT_CLUSTER = "api-ceres.kube.pusherplatform.io";
                 var App = function () {
                     function App(options) {
                         this.serviceId = options.serviceId;
-                        this.authorizer = options.authorizer;
+                        this.tokenProvider = options.tokenProvider;
                         this.client = options.client || new base_client_1.BaseClient({
                             cluster: options.cluster || DEFAULT_CLUSTER,
                             encrypted: options.encrypted
                         });
+                        if (options.logger) {
+                            this.logger = options.logger;
+                        } else {
+                            this.logger = new logger_1.DefaultLogger();
+                        }
                     }
                     App.prototype.request = function (options) {
                         var _this = this;
                         options.path = this.absPath(options.path);
-                        var authorizer = options.authorizer || this.authorizer;
-                        if (!options.jwt && authorizer) {
-                            return authorizer.authorize().then(function (jwt) {
+                        var tokenProvider = options.tokenProvider || this.tokenProvider;
+                        if (!options.jwt && tokenProvider) {
+                            return tokenProvider.fetchToken().then(function (jwt) {
                                 return _this.client.request(__assign({ jwt: jwt }, options));
                             });
                         } else {
@@ -616,12 +700,13 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
                     };
                     App.prototype.subscribe = function (options) {
                         options.path = this.absPath(options.path);
+                        options.logger = this.logger;
                         var subscription = this.client.newSubscription(options);
-                        var authorizer = options.authorizer || this.authorizer;
+                        var tokenProvider = options.tokenProvider || this.tokenProvider;
                         if (options.jwt) {
                             subscription.open(options.jwt);
-                        } else if (authorizer) {
-                            authorizer.authorize().then(function (jwt) {
+                        } else if (tokenProvider) {
+                            tokenProvider.fetchToken().then(function (jwt) {
                                 subscription.open(jwt);
                             }).catch(function (err) {
                                 subscription.unsubscribe(err);
@@ -632,8 +717,9 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
                         return subscription;
                     };
                     App.prototype.resumableSubscribe = function (options) {
+                        options.logger = this.logger;
                         options.path = this.absPath(options.path);
-                        var authorizer = options.authorizer || this.authorizer;
+                        var authorizer = options.tokenProvider || this.tokenProvider;
                         var resumableSubscription = this.client.newResumableSubscription(__assign({ authorizer: authorizer }, options));
                         resumableSubscription.open();
                         return resumableSubscription;
@@ -647,13 +733,13 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
 
                 /***/
             },
-            /* 4 */
+            /* 5 */
             /***/function (module, exports, __webpack_require__) {
 
                 "use strict";
 
                 Object.defineProperty(exports, "__esModule", { value: true });
-                var app_1 = __webpack_require__(3);
+                var app_1 = __webpack_require__(4);
                 var base_client_1 = __webpack_require__(0);
                 var resumable_subscription_1 = __webpack_require__(2);
                 var subscription_1 = __webpack_require__(1);
@@ -665,12 +751,109 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
                 };
 
                 /***/
+            },
+            /* 6 */
+            /***/function (module, exports, __webpack_require__) {
+
+                "use strict";
+
+                Object.defineProperty(exports, "__esModule", { value: true });
+                var base_client_1 = __webpack_require__(0);
+                var logger_1 = __webpack_require__(3);
+                var Retry = function () {
+                    function Retry(waitTimeMilis) {
+                        this.waitTimeMilis = waitTimeMilis;
+                    }
+                    return Retry;
+                }();
+                exports.Retry = Retry;
+                var DoNotRetry = function () {
+                    function DoNotRetry(error) {
+                        this.error = error;
+                    }
+                    return DoNotRetry;
+                }();
+                exports.DoNotRetry = DoNotRetry;
+                var ExponentialBackoffRetryStrategy = function () {
+                    function ExponentialBackoffRetryStrategy(options) {
+                        this.limit = 6;
+                        this.retryCount = 0;
+                        this.maxBackoffMilis = 30000;
+                        this.currentBackoffMilis = 1000;
+                        if (options.limit) this.limit = options.limit;
+                        if (options.initialBackoffMilis) this.currentBackoffMilis = options.initialBackoffMilis;
+                        if (options.maxBackoffMilis) this.maxBackoffMilis = options.maxBackoffMilis;
+                        if (options.logger) {
+                            this.logger = options.logger;
+                        } else {
+                            this.logger = new logger_1.DefaultLogger();
+                        }
+                    }
+                    ExponentialBackoffRetryStrategy.prototype.shouldRetry = function (error) {
+                        this.logger.debug(this.constructor.name + ":  Error received", error);
+                        if (this.retryCount >= this.limit && this.limit > 0) {
+                            this.logger.debug(this.constructor.name + ":  Retry count is over the maximum limit: " + this.limit);
+                            return new DoNotRetry(error);
+                        }
+                        var retryable = this.isRetryable(error);
+                        if (retryable.isRetryable) {
+                            if (retryable.backoffMillis) {
+                                this.retryCount += 1;
+                                return new Retry(retryable.backoffMillis);
+                            } else {
+                                this.currentBackoffMilis = this.calulateMilisToRetry();
+                                this.retryCount += 1;
+                                this.logger.debug(this.constructor.name + ": Will attempt to retry in: " + this.currentBackoffMilis);
+                                return new Retry(this.currentBackoffMilis);
+                            }
+                        } else {
+                            this.logger.debug(this.constructor.name + ": Error is not retryable", error);
+                            return new DoNotRetry(error);
+                        }
+                    };
+                    ExponentialBackoffRetryStrategy.prototype.attemptRetry = function (error) {
+                        var _this = this;
+                        return new Promise(function (resolve, reject) {
+                            var shouldRetry = _this.shouldRetry(error);
+                            if (shouldRetry instanceof DoNotRetry) {
+                                reject(error);
+                            } else if (shouldRetry instanceof Retry) {
+                                window.setTimeout(resolve, shouldRetry.waitTimeMilis);
+                            }
+                        });
+                    };
+                    ExponentialBackoffRetryStrategy.prototype.isRetryable = function (error) {
+                        var retryable = {
+                            isRetryable: false
+                        };
+                        //We allow network errors
+                        if (error instanceof base_client_1.NetworkError) retryable.isRetryable = true;else if (error instanceof base_client_1.ErrorResponse) {
+                            //Only retry after is allowed
+                            if (error.headers["retry-after"]) {
+                                retryable.isRetryable = true;
+                                retryable.backoffMillis = parseInt(error.headers["retry-after"]) * 1000;
+                            }
+                        }
+                        return retryable;
+                    };
+                    ExponentialBackoffRetryStrategy.prototype.calulateMilisToRetry = function () {
+                        if (this.currentBackoffMilis >= this.maxBackoffMilis || this.currentBackoffMilis * 2 >= this.maxBackoffMilis) {
+                            return this.maxBackoffMilis;
+                        }
+                        if (this.retryCount > 0) {
+                            return this.currentBackoffMilis * 2;
+                        }
+                        return this.currentBackoffMilis;
+                    };
+                    return ExponentialBackoffRetryStrategy;
+                }();
+                exports.ExponentialBackoffRetryStrategy = ExponentialBackoffRetryStrategy;
+
+                /***/
             }])
         );
     });
 });
-
-var PusherPlatform = unwrapExports(pusherPlatform);
 
 var servicePath = "services/feeds/v1/";
 var feedIdRegex = /^[a-zA-Z0-9-]+$/;
@@ -892,7 +1075,7 @@ var PusherFeeds = function () {
         action: "READ"
       })
     });
-    this.app = new PusherPlatform.App({ serviceId: serviceId, cluster: cluster });
+    this.app = new undefined({ serviceId: serviceId, cluster: cluster });
   }
 
   createClass(PusherFeeds, [{
