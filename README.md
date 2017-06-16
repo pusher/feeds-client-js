@@ -7,13 +7,13 @@ The Javascript client for Pusher Feeds.
 [yarn](https://yarnpkg.com/):
 
 ```sh
-$ yarn add https://github.com/pusher/feeds-client-js
+$ yarn add pusher-feeds-client
 ```
 
 In a script tag:
 
 ```html
-<script src="https://github.com/pusher/feeds-client-js/blob/master/target/pusher-feeds-client.js"></script> [TODO does this actually work?]
+<script src="https://rawgit.com/pusher/deliverfoo/master/pusher-feeds-client.js"></script>
 ```
 
 ## Quick start
