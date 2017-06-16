@@ -13,7 +13,7 @@
     "url": "git+https://github.com/pusher/feeds-client-js.git"
   },
   "dependencies": {
-    "pusher-platform-js": "^0.3.1"
+    "pusher-platform-js": "^0.3.3"
   },
   "devDependencies": {
     "babel-plugin-external-helpers": "^6.22.0",

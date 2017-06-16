@@ -1,6 +1,6 @@
 import PusherPlatform from "pusher-platform-js";
 import Feed from "./feed";
-import FeedsAuthorizer from "./feeds-authorizer";
+import TokenProvider from "./token-provider";
 import { servicePath, feedIdRegex, serviceIdRegex } from "./constants";
 import { parseResponse, queryString } from "./utils";
 
@@ -11,7 +11,7 @@ export default class PusherFeeds {
     if (!serviceId || !serviceId.match(serviceIdRegex)) {
       throw new TypeError(`Invalid serviceId: ${ serviceId }`);
     }
-    this.listAuthorizer = new FeedsAuthorizer({
+    this.listTokenProvider = new TokenProvider({
       authEndpoint: this.authEndpoint,
       authData: {
         ...this.authData,
@@ -19,7 +19,7 @@ export default class PusherFeeds {
         action: "READ",
       }
     });
-    this.firehoseAuthorizer = new FeedsAuthorizer({
+    this.firehoseTokenProvider = new TokenProvider({
       authEndpoint: this.authEndpoint,
       authData: {
         ...this.authData,
@@ -34,7 +34,7 @@ export default class PusherFeeds {
     return parseResponse(this.app.request({
       method: "GET",
       path: `${ servicePath }/feeds` + queryString({ prefix, limit }),
-      authorizer: this.listAuthorizer,
+      tokenProvider: this.listTokenProvider,
     }));
   }
 
@@ -42,7 +42,7 @@ export default class PusherFeeds {
     if (!feedId || !feedId.match(feedIdRegex)) {
       throw new TypeError(`Invalid feedId: ${ feedId }`);
     }
-    const readAuthorizer = feedId.startsWith("private-") ? new FeedsAuthorizer({
+    const readTokenProvider = feedId.startsWith("private-") ? new TokenProvider({
       authEndpoint:  this.authEndpoint,
       authData: {
         ...this.authData,
@@ -53,7 +53,7 @@ export default class PusherFeeds {
     return new Feed({
       app: this.app,
       feedId,
-      readAuthorizer,
+      readTokenProvider,
     });
   }
 
@@ -62,7 +62,7 @@ export default class PusherFeeds {
     return this.app.subscribe({
       ...options,
       path: `${ servicePath }/firehose/items`,
-      authorizer: this.firehoseAuthorizer,
+      tokenProvider: this.firehoseTokenProvider,
     });
   }
 }

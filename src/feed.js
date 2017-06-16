@@ -2,10 +2,10 @@ import { servicePath } from "./constants";
 import { parseResponse, queryString } from "./utils";
 
 export default class Feed {
-  constructor({ app, feedId, readAuthorizer }) {
+  constructor({ app, feedId, readTokenProvider }) {
     this.app = app;
     this.feedId = feedId;
-    this.readAuthorizer = readAuthorizer;
+    this.readTokenProvider = readTokenProvider;
   }
 
   subscribe(options = {}) {
@@ -14,7 +14,7 @@ export default class Feed {
       path: this.itemsPath + queryString({
         tail_size: options.tailSize,
       }),
-      authorizer: this.readAuthorizer,
+      tokenProvider: this.readTokenProvider,
       onEvent: options.onItem,
     });
   }
@@ -26,7 +26,7 @@ export default class Feed {
         from_id: fromId,
         limit: limit,
       }),
-      authorizer: this.readAuthorizer,
+      tokenProvider: this.readTokenProvider,
     }));
   }
 

@@ -8,7 +8,9 @@ var commonjsGlobal = typeof window !== 'undefined' ? window : typeof global !== 
 
 
 
-
+function unwrapExports (x) {
+	return x && x.__esModule ? x['default'] : x;
+}
 
 function createCommonjsModule(fn, module) {
 	return module = { exports: {} }, fn(module, module.exports), module.exports;
@@ -719,8 +721,8 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
                     App.prototype.resumableSubscribe = function (options) {
                         options.logger = this.logger;
                         options.path = this.absPath(options.path);
-                        var authorizer = options.tokenProvider || this.tokenProvider;
-                        var resumableSubscription = this.client.newResumableSubscription(__assign({ authorizer: authorizer }, options));
+                        var tokenProvider = options.tokenProvider || this.tokenProvider;
+                        var resumableSubscription = this.client.newResumableSubscription(__assign({ tokenProvider: tokenProvider }, options));
                         resumableSubscription.open();
                         return resumableSubscription;
                     };
@@ -855,6 +857,8 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
     });
 });
 
+var PusherPlatform = unwrapExports(pusherPlatform);
+
 var servicePath = "services/feeds/v1/";
 var feedIdRegex = /^[a-zA-Z0-9-]+$/;
 var serviceIdRegex = /^[a-zA-Z0-9-]+$/;
@@ -934,12 +938,12 @@ var Feed = function () {
   function Feed(_ref) {
     var app = _ref.app,
         feedId = _ref.feedId,
-        readAuthorizer = _ref.readAuthorizer;
+        readTokenProvider = _ref.readTokenProvider;
     classCallCheck(this, Feed);
 
     this.app = app;
     this.feedId = feedId;
-    this.readAuthorizer = readAuthorizer;
+    this.readTokenProvider = readTokenProvider;
   }
 
   createClass(Feed, [{
@@ -951,7 +955,7 @@ var Feed = function () {
         path: this.itemsPath + queryString({
           tail_size: options.tailSize
         }),
-        authorizer: this.readAuthorizer,
+        tokenProvider: this.readTokenProvider,
         onEvent: options.onItem
       }));
     }
@@ -969,7 +973,7 @@ var Feed = function () {
           from_id: fromId,
           limit: limit
         }),
-        authorizer: this.readAuthorizer
+        tokenProvider: this.readTokenProvider
       }));
     }
   }, {
@@ -985,19 +989,19 @@ function now() {
   return Math.floor(Date.now() / 1000);
 }
 
-var FeedsAuthorizer = function () {
-  function FeedsAuthorizer(_ref) {
+var TokenProvider = function () {
+  function TokenProvider(_ref) {
     var authEndpoint = _ref.authEndpoint,
         authData = _ref.authData;
-    classCallCheck(this, FeedsAuthorizer);
+    classCallCheck(this, TokenProvider);
 
     this.authEndpoint = authEndpoint || defaultAuthEndpoint;
     this.authData = authData;
   }
 
-  createClass(FeedsAuthorizer, [{
-    key: "authorize",
-    value: function authorize() {
+  createClass(TokenProvider, [{
+    key: "fetchToken",
+    value: function fetchToken() {
       var _this = this;
 
       if (this.cacheIsStale) {
@@ -1042,7 +1046,7 @@ var FeedsAuthorizer = function () {
       return !this.cachedToken || now() > this.cacheValidUntil;
     }
   }]);
-  return FeedsAuthorizer;
+  return TokenProvider;
 }();
 
 var PusherFeeds = function () {
@@ -1061,21 +1065,21 @@ var PusherFeeds = function () {
     if (!serviceId || !serviceId.match(serviceIdRegex)) {
       throw new TypeError("Invalid serviceId: " + serviceId);
     }
-    this.listAuthorizer = new FeedsAuthorizer({
+    this.listTokenProvider = new TokenProvider({
       authEndpoint: this.authEndpoint,
       authData: _extends({}, this.authData, {
         path: "feeds",
         action: "READ"
       })
     });
-    this.firehoseAuthorizer = new FeedsAuthorizer({
+    this.firehoseTokenProvider = new TokenProvider({
       authEndpoint: this.authEndpoint,
       authData: _extends({}, this.authData, {
         path: "firehose/items",
         action: "READ"
       })
     });
-    this.app = new undefined({ serviceId: serviceId, cluster: cluster });
+    this.app = new PusherPlatform.App({ serviceId: serviceId, cluster: cluster });
   }
 
   createClass(PusherFeeds, [{
@@ -1088,7 +1092,7 @@ var PusherFeeds = function () {
       return parseResponse(this.app.request({
         method: "GET",
         path: servicePath + "/feeds" + queryString({ prefix: prefix, limit: limit }),
-        authorizer: this.listAuthorizer
+        tokenProvider: this.listTokenProvider
       }));
     }
   }, {
@@ -1097,7 +1101,7 @@ var PusherFeeds = function () {
       if (!feedId || !feedId.match(feedIdRegex)) {
         throw new TypeError("Invalid feedId: " + feedId);
       }
-      var readAuthorizer = feedId.startsWith("private-") ? new FeedsAuthorizer({
+      var readTokenProvider = feedId.startsWith("private-") ? new TokenProvider({
         authEndpoint: this.authEndpoint,
         authData: _extends({}, this.authData, {
           path: "feeds/" + feedId + "/items",
@@ -1107,7 +1111,7 @@ var PusherFeeds = function () {
       return new Feed({
         app: this.app,
         feedId: feedId,
-        readAuthorizer: readAuthorizer
+        readTokenProvider: readTokenProvider
       });
     }
   }, {
@@ -1116,7 +1120,7 @@ var PusherFeeds = function () {
       // TODO wrap onEvent to expose onPublish, onSubscribe, and onUnsubscribe
       return this.app.subscribe(_extends({}, options, {
         path: servicePath + "/firehose/items",
-        authorizer: this.firehoseAuthorizer
+        tokenProvider: this.firehoseTokenProvider
       }));
     }
   }]);

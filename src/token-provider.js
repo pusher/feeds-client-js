@@ -5,13 +5,13 @@ function now() {
   return Math.floor(Date.now() / 1000);
 }
 
-export default class FeedsAuthorizer {
+export default class TokenProvider {
   constructor({ authEndpoint, authData }) {
     this.authEndpoint = authEndpoint || defaultAuthEndpoint;
     this.authData = authData;
   }
 
-  authorize() {
+  fetchToken() {
     if (this.cacheIsStale) {
       return this.makeAuthRequest().then(responseBody => {
         this.cache(responseBody.access_token, responseBody.expires_in);
