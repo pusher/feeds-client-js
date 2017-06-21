@@ -3,9 +3,9 @@ import resolve from "rollup-plugin-node-resolve";
 import babel from "rollup-plugin-babel";
 
 export default {
-  entry: "src/pusher-feeds.js",
+  entry: "src/feeds.js",
   format: "umd",
-  moduleName: "PusherFeeds",
+  moduleName: "Feeds",
   plugins: [
     resolve(),
     commonjs(),

@@ -4,7 +4,7 @@ import TokenProvider from "./token-provider";
 import { servicePath, feedIdRegex, serviceIdRegex } from "./constants";
 import { parseResponse, queryString } from "./utils";
 
-export default class PusherFeeds {
+export default class Feeds {
   constructor({ serviceId, cluster, authData = {}, authEndpoint } = {}) {
     this.authData = authData;
     this.authEndpoint = authEndpoint;

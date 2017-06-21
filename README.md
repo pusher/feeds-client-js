@@ -18,18 +18,18 @@ In a script tag:
 
 ## Quick start
 
-The default export is a `PusherFeeds` class.
+The default export is a `Feeds` class.
 
-Instantiate an instance of PusherFeeds:
+Instantiate an instance of Feeds:
 
 ```js
-const pusherFeeds = new PusherFeeds({ serviceId: your_service_id });
+const feeds = new Feeds({ serviceId: your_service_id });
 ```
 
 Create a feed object:
 
 ```js
-const yourFeed = pusherFeeds.feed(your_feed_id);
+const yourFeed = feeds.feed(your_feed_id);
 ```
 
 Subscribe to your feed, and log new items:
@@ -40,7 +40,7 @@ yourFeed.subscribe({ onItem: console.log });
 
 ## Reference
 
-### `PusherFeeds`
+### `Feeds`
 
 Takes a single options object with the following properties.
 
@@ -48,7 +48,7 @@ Takes a single options object with the following properties.
   dashboard](https://dash.pusher.com)
 
 - `cluster`: [optional] the cluster that your service lives on, defaults to
-  `api-ceres.kube.pusherplatform.io`
+  `api-ceres.pusherplatform.io`
 
 - `authEndpiont`: [optional] the endpoint to use to request tokens for access
   to private feeds; see [auth docs](TODO)
@@ -56,7 +56,7 @@ Takes a single options object with the following properties.
 - `authData`: [optional] data to pass to the auth endpoint along with token
   requests
 
-### `pusherFeeds.list`
+### `feeds.list`
 
 List non-empty feeds. This method requires `ADMIN` permission – see [auth
 docs](TODO). Takes a single options object with the following properties.
@@ -65,7 +65,7 @@ docs](TODO). Takes a single options object with the following properties.
 
 - `limit`: [optional] return at most this many matches
 
-### `pusherFeeds.firehose`
+### `feeds.firehose`
 
 Subscribe to the firehose for this provisioned service to see all events and
 subscriptions on a single subscription. This method requires `ADMIN` permission
@@ -84,7 +84,7 @@ properties
 - `onError`: [optional] callback to fire when the subscription is closed with
   error
 
-### `pusherFeeds.feed`
+### `feeds.feed`
 
 Returns a reference to a particular feed, from which subscriptions and history
 queries can then be made. Takes a `feedId`.
