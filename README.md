@@ -13,7 +13,7 @@ $ yarn add pusher-feeds-client
 In a script tag:
 
 ```html
-<script src="https://rawgit.com/pusher/deliverfoo/master/pusher-feeds-client.js"></script>
+<script src="https://unpkg.com/pusher-feeds-client"></script>
 ```
 
 ## Quick start
