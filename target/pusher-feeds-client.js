@@ -864,7 +864,7 @@ var cacheExpiryTolerance = 60; // 60 seconds (in seconds)
 var defaultAuthEndpoint = "/feeds/tokens";
 var feedIdRegex = /^[a-zA-Z0-9-]+$/;
 var serviceIdRegex = /^[a-zA-Z0-9-]+$/;
-var servicePath = "services/feeds/v1/";
+var servicePath = "services/feeds/v1";
 var tokenProviderTimeout = 30 * 1000; // 30 seconds (in ms)
 
 function parseResponse(promise) {
@@ -935,6 +935,30 @@ var _extends = Object.assign || function (target) {
         target[key] = source[key];
       }
     }
+  }
+
+  return target;
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+var objectWithoutProperties = function (obj, keys) {
+  var target = {};
+
+  for (var i in obj) {
+    if (keys.indexOf(i) >= 0) continue;
+    if (!Object.prototype.hasOwnProperty.call(obj, i)) continue;
+    target[i] = obj[i];
   }
 
   return target;
@@ -1124,9 +1148,28 @@ var Feeds = function () {
     }
   }, {
     key: "firehose",
-    value: function firehose(options) {
-      // TODO wrap onEvent to expose onPublish, onSubscribe, and onUnsubscribe
+    value: function firehose() {
+      var _ref3 = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+      var onPublish = _ref3.onPublish,
+          onSubscribe = _ref3.onSubscribe,
+          onUnsubscribe = _ref3.onUnsubscribe,
+          options = objectWithoutProperties(_ref3, ["onPublish", "onSubscribe", "onUnsubscribe"]);
+
+      if (typeof onPublish !== "function" && typeof onSubscribe !== "function" && typeof onUnsubscribe !== "function") {
+        throw new TypeError("One of onPublish, onSubscribe, or onUnsubscribe must be a function");
+      }
+      var onEvent = function onEvent(event) {
+        if (event.event_type === 0) {
+          onPublish(event);
+        } else if (event.event_type === 1) {
+          onSubscribe(event);
+        } else if (event.event_type === 2) {
+          onUnsubscribe(event);
+        }
+      };
       return this.app.subscribe(_extends({}, options, {
+        onEvent: onEvent,
         path: servicePath + "/firehose/items",
         tokenProvider: this.firehoseTokenProvider
       }));

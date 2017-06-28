@@ -57,10 +57,26 @@ export default class Feeds {
     });
   }
 
-  firehose(options) {
-    // TODO wrap onEvent to expose onPublish, onSubscribe, and onUnsubscribe
+  firehose({ onPublish, onSubscribe, onUnsubscribe, ...options } = {}) {
+    if (
+      typeof onPublish !== "function" &&
+      typeof onSubscribe !== "function" &&
+      typeof onUnsubscribe !== "function"
+    ) {
+      throw new TypeError(`One of onPublish, onSubscribe, or onUnsubscribe must be a function`);
+    }
+    const onEvent = event => {
+      if (event.event_type === 0) {
+        onPublish(event);
+      } else if (event.event_type === 1) {
+        onSubscribe(event);
+      } else if (event.event_type === 2) {
+        onUnsubscribe(event);
+      }
+    }
     return this.app.subscribe({
       ...options,
+      onEvent,
       path: `${ servicePath }/firehose/items`,
       tokenProvider: this.firehoseTokenProvider,
     });
