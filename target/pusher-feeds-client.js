@@ -865,7 +865,7 @@ var defaultAuthEndpoint = "/feeds/tokens";
 var feedIdRegex = /^[a-zA-Z0-9-]+$/;
 var serviceIdRegex = /^[a-zA-Z0-9-]+$/;
 var servicePath = "services/feeds/v1/";
-var tokenProviderTimeout = 30000; // 30 seconds (in ms)
+var tokenProviderTimeout = 30 * 1000; // 30 seconds (in ms)
 
 function parseResponse(promise) {
   return new Promise(function (resolve, reject) {
