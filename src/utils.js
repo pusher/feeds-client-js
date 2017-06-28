@@ -21,3 +21,7 @@ export function queryString(data) {
   const encodedData = urlEncode(data);
   return encodedData ? `?${ encodedData }` : "";
 }
+
+export function unixTimeNow() {
+  return Math.floor(Date.now() / 1000);
+}
