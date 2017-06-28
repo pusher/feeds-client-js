@@ -6,7 +6,7 @@
       new Feeds({
         serviceId: "4ff02853-helo-4590-81c7-42c09f25d113",
       }).feed("zans-feed").subscribe({
-        onEvent: event => console.log(event),
+        onItem: item => console.log(item),
         onOpen: () => console.log("opened"),
         onError: error => console.error(error),
         tailSize: 10,

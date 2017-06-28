@@ -9,6 +9,9 @@ export default class Feed {
   }
 
   subscribe(options = {}) {
+    if (typeof options.onItem !== "function") {
+      throw new TypeError("Must provide an `onItem` callback");
+    }
     return this.app.resumableSubscribe({
       ...options,
       path: this.itemsPath + queryString({
