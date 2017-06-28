@@ -66,11 +66,11 @@ export default class Feeds {
       throw new TypeError(`One of onPublish, onSubscribe, or onUnsubscribe must be a function`);
     }
     const onEvent = event => {
-      if (event.event_type === 0) {
+      if (event.event_type === 0 && onPublish) {
         onPublish(event);
-      } else if (event.event_type === 1) {
+      } else if (event.event_type === 1 && onSubscribe) {
         onSubscribe(event);
-      } else if (event.event_type === 2) {
+      } else if (event.event_type === 2 && onUnsubscribe) {
         onUnsubscribe(event);
       }
     }
