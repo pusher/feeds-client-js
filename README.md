@@ -96,6 +96,8 @@ resumed from some previously seen item by providing a `lastEventId`, or can be
 initiated with some initial state by providing a `tailSize`. Private feeds require `READ` permission – see [auth docs](TODO). Takes a single
 options object with the following properties.
 
+- `onItem`: [required] callback to handle items, takes each item as a parameter
+
 - `lastEventId`: [optional] retrieve every item published after `lastEventId`,
   and then live items as they are published
 
@@ -106,8 +108,6 @@ options object with the following properties.
 - `onOpending`: [optional] callback to fire when the subscription is opening
 
 - `onOpen`: [optional] callback to fire when the subscription is open
-
-- `onItem`: [optional] callback to handle items, takes each item as a parameter
 
 - `onEnd`: [optional] callback to fire when the subscription ends normally
 

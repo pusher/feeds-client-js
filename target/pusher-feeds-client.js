@@ -852,7 +852,8 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
                 exports.ExponentialBackoffRetryStrategy = ExponentialBackoffRetryStrategy;
 
                 /***/
-            }])
+            }]
+            /******/)
         );
     });
 });
@@ -951,6 +952,9 @@ var Feed = function () {
     value: function subscribe() {
       var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
+      if (typeof options.onItem !== "function") {
+        throw new TypeError("Must provide an `onItem` callback");
+      }
       return this.app.resumableSubscribe(_extends({}, options, {
         path: this.itemsPath + queryString({
           tail_size: options.tailSize
