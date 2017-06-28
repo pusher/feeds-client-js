@@ -1,9 +1,10 @@
-import { cacheExpiryTolerance, defaultAuthEndpoint } from "./constants";
-import { urlEncode } from "./utils";
+import {
+  cacheExpiryTolerance,
+  defaultAuthEndpoint,
+  tokenProviderTimeout,
+} from "./constants";
 
-function now() {
-  return Math.floor(Date.now() / 1000);
-}
+import { urlEncode, unixTimeNow } from "./utils";
 
 export default class TokenProvider {
   constructor({ authEndpoint, authData }) {
@@ -22,25 +23,33 @@ export default class TokenProvider {
   }
 
   get cacheIsStale() {
-    return !this.cachedToken || now() > this.cacheValidUntil;
+    return !this.cachedToken || unixTimeNow() > this.cacheValidUntil;
   }
 
   cache(token, expiresIn) {
     this.cachedToken = token;
-    this.cacheValidUntil = now() + expiresIn - cacheExpiryTolerance;
+    this.cacheValidUntil = unixTimeNow() + expiresIn - cacheExpiryTolerance;
   }
 
   makeAuthRequest() {
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
       xhr.open("POST", this.authEndpoint);
-      xhr.addEventListener("load", () => {
+      xhr.timeout = tokenProviderTimeout;
+      xhr.onload = () => {
         if (xhr.status === 200) {
           resolve(JSON.parse(xhr.responseText));
         } else {
-          reject(new Error(`Couldn't get token from ${ this.authEndpoint }; got ${ xhr.status } ${ xhr.statusText }.`));
+          reject(new Error(`Couldn't fetch token from ${
+            this.authEndpoint
+          }; got ${ xhr.status } ${ xhr.statusText }.`));
         }
-      });
+      };
+      xhr.ontimeout = () => {
+        reject(new Error(`Request timed out while fetching token from ${
+          this.authEndpoint
+        }`));
+      }
       xhr.setRequestHeader("content-type", "application/x-www-form-urlencoded");
       xhr.send(urlEncode({
         ...this.authData,

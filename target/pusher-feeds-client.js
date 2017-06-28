@@ -852,18 +852,20 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
                 exports.ExponentialBackoffRetryStrategy = ExponentialBackoffRetryStrategy;
 
                 /***/
-            }])
+            }]
+            /******/)
         );
     });
 });
 
 var PusherPlatform = unwrapExports(pusherPlatform);
 
-var servicePath = "services/feeds/v1/";
+var cacheExpiryTolerance = 60; // 60 seconds (in seconds)
+var defaultAuthEndpoint = "/feeds/tokens";
 var feedIdRegex = /^[a-zA-Z0-9-]+$/;
 var serviceIdRegex = /^[a-zA-Z0-9-]+$/;
-var cacheExpiryTolerance = 60;
-var defaultAuthEndpoint = "/feeds/tokens";
+var servicePath = "services/feeds/v1/";
+var tokenProviderTimeout = 30 * 1000; // 30 seconds (in ms)
 
 function parseResponse(promise) {
   return new Promise(function (resolve, reject) {
@@ -888,6 +890,10 @@ function urlEncode(data) {
 function queryString(data) {
   var encodedData = urlEncode(data);
   return encodedData ? "?" + encodedData : "";
+}
+
+function unixTimeNow() {
+  return Math.floor(Date.now() / 1000);
 }
 
 var classCallCheck = function (instance, Constructor) {
@@ -985,10 +991,6 @@ var Feed = function () {
   return Feed;
 }();
 
-function now() {
-  return Math.floor(Date.now() / 1000);
-}
-
 var TokenProvider = function () {
   function TokenProvider(_ref) {
     var authEndpoint = _ref.authEndpoint,
@@ -1016,7 +1018,7 @@ var TokenProvider = function () {
     key: "cache",
     value: function cache(token, expiresIn) {
       this.cachedToken = token;
-      this.cacheValidUntil = now() + expiresIn - cacheExpiryTolerance;
+      this.cacheValidUntil = unixTimeNow() + expiresIn - cacheExpiryTolerance;
     }
   }, {
     key: "makeAuthRequest",
@@ -1026,13 +1028,17 @@ var TokenProvider = function () {
       return new Promise(function (resolve, reject) {
         var xhr = new XMLHttpRequest();
         xhr.open("POST", _this2.authEndpoint);
-        xhr.addEventListener("load", function () {
+        xhr.timeout = tokenProviderTimeout;
+        xhr.onload = function () {
           if (xhr.status === 200) {
             resolve(JSON.parse(xhr.responseText));
           } else {
-            reject(new Error("Couldn't get token from " + _this2.authEndpoint + "; got " + xhr.status + " " + xhr.statusText + "."));
+            reject(new Error("Couldn't fetch token from " + _this2.authEndpoint + "; got " + xhr.status + " " + xhr.statusText + "."));
           }
-        });
+        };
+        xhr.ontimeout = function () {
+          reject(new Error("Request timed out while fetching token from " + _this2.authEndpoint));
+        };
         xhr.setRequestHeader("content-type", "application/x-www-form-urlencoded");
         xhr.send(urlEncode(_extends({}, _this2.authData, {
           grant_type: "client_credentials"
@@ -1042,7 +1048,7 @@ var TokenProvider = function () {
   }, {
     key: "cacheIsStale",
     get: function get$$1() {
-      return !this.cachedToken || now() > this.cacheValidUntil;
+      return !this.cachedToken || unixTimeNow() > this.cacheValidUntil;
     }
   }]);
   return TokenProvider;
