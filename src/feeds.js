@@ -60,14 +60,14 @@ export default class Feeds {
   firehose({ onPublish, onSubscribe, onUnsubscribe, ...options } = {}) {
     validateFirehoseCallbacks({ onPublish, onSubscribe, onUnsubscribe });
     const onEvent = event => {
-      if (event.event_type === 0 && onPublish) {
+      if (event.body.event_type === 0 && onPublish) {
         onPublish(event);
-      } else if (event.event_type === 1 && onSubscribe) {
+      } else if (event.body.event_type === 1 && onSubscribe) {
         onSubscribe(event);
-      } else if (event.event_type === 2 && onUnsubscribe) {
+      } else if (event.body.event_type === 2 && onUnsubscribe) {
         onUnsubscribe(event);
       }
-    }
+    };
     return this.app.subscribe({
       ...options,
       onEvent,
