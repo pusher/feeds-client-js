@@ -81,12 +81,12 @@ function validateFirehoseCallbacks(callbacks) {
   const defined = Object.keys(callbacks)
     .filter(k => callbacks[k] !== undefined)
     .map(k => ({ name: k, callback: callbacks[k] }));
-  if (defined.length === 0) {
-    throw new TypeError(`Must provide at least one of onPublish, onSubscribe, or onUnsubscribe`);
-  }
   defined.forEach(({ name, callback }) => {
     if (typeof callback !== "function") {
       throw new TypeError(`${ name } must be a function, got ${ callback }`);
     }
   });
+  if (defined.length === 0) {
+    throw new TypeError(`Must provide at least one of onPublish, onSubscribe, or onUnsubscribe`);
+  }
 }

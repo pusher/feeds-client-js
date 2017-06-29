@@ -1182,9 +1182,6 @@ function validateFirehoseCallbacks(callbacks) {
   }).map(function (k) {
     return { name: k, callback: callbacks[k] };
   });
-  if (defined.length === 0) {
-    throw new TypeError("Must provide at least one of onPublish, onSubscribe, or onUnsubscribe");
-  }
   defined.forEach(function (_ref4) {
     var name = _ref4.name,
         callback = _ref4.callback;
@@ -1193,6 +1190,9 @@ function validateFirehoseCallbacks(callbacks) {
       throw new TypeError(name + " must be a function, got " + callback);
     }
   });
+  if (defined.length === 0) {
+    throw new TypeError("Must provide at least one of onPublish, onSubscribe, or onUnsubscribe");
+  }
 }
 
 return Feeds;
