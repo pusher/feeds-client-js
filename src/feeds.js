@@ -57,12 +57,36 @@ export default class Feeds {
     });
   }
 
-  firehose(options) {
-    // TODO wrap onEvent to expose onPublish, onSubscribe, and onUnsubscribe
+  firehose({ onPublish, onSubscribe, onUnsubscribe, ...options } = {}) {
+    validateFirehoseCallbacks({ onPublish, onSubscribe, onUnsubscribe });
+    const onEvent = event => {
+      if (event.body.event_type === 0 && onPublish) {
+        onPublish(event);
+      } else if (event.body.event_type === 1 && onSubscribe) {
+        onSubscribe(event);
+      } else if (event.body.event_type === 2 && onUnsubscribe) {
+        onUnsubscribe(event);
+      }
+    };
     return this.app.subscribe({
       ...options,
+      onEvent,
       path: `${ servicePath }/firehose/items`,
       tokenProvider: this.firehoseTokenProvider,
     });
+  }
+}
+
+function validateFirehoseCallbacks(callbacks) {
+  const defined = Object.keys(callbacks)
+    .filter(k => callbacks[k] !== undefined)
+    .map(k => ({ name: k, callback: callbacks[k] }));
+  defined.forEach(({ name, callback }) => {
+    if (typeof callback !== "function") {
+      throw new TypeError(`${ name } must be a function, got ${ callback }`);
+    }
+  });
+  if (defined.length === 0) {
+    throw new TypeError(`Must provide at least one of onPublish, onSubscribe, or onUnsubscribe`);
   }
 }

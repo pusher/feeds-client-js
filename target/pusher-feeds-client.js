@@ -864,7 +864,7 @@ var cacheExpiryTolerance = 60; // 60 seconds (in seconds)
 var defaultAuthEndpoint = "/feeds/tokens";
 var feedIdRegex = /^[a-zA-Z0-9-]+$/;
 var serviceIdRegex = /^[a-zA-Z0-9-]+$/;
-var servicePath = "services/feeds/v1/";
+var servicePath = "services/feeds/v1";
 var tokenProviderTimeout = 30 * 1000; // 30 seconds (in ms)
 
 function parseResponse(promise) {
@@ -935,6 +935,30 @@ var _extends = Object.assign || function (target) {
         target[key] = source[key];
       }
     }
+  }
+
+  return target;
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+var objectWithoutProperties = function (obj, keys) {
+  var target = {};
+
+  for (var i in obj) {
+    if (keys.indexOf(i) >= 0) continue;
+    if (!Object.prototype.hasOwnProperty.call(obj, i)) continue;
+    target[i] = obj[i];
   }
 
   return target;
@@ -1124,9 +1148,26 @@ var Feeds = function () {
     }
   }, {
     key: "firehose",
-    value: function firehose(options) {
-      // TODO wrap onEvent to expose onPublish, onSubscribe, and onUnsubscribe
+    value: function firehose() {
+      var _ref3 = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+      var onPublish = _ref3.onPublish,
+          onSubscribe = _ref3.onSubscribe,
+          onUnsubscribe = _ref3.onUnsubscribe,
+          options = objectWithoutProperties(_ref3, ["onPublish", "onSubscribe", "onUnsubscribe"]);
+
+      validateFirehoseCallbacks({ onPublish: onPublish, onSubscribe: onSubscribe, onUnsubscribe: onUnsubscribe });
+      var onEvent = function onEvent(event) {
+        if (event.body.event_type === 0 && onPublish) {
+          onPublish(event);
+        } else if (event.body.event_type === 1 && onSubscribe) {
+          onSubscribe(event);
+        } else if (event.body.event_type === 2 && onUnsubscribe) {
+          onUnsubscribe(event);
+        }
+      };
       return this.app.subscribe(_extends({}, options, {
+        onEvent: onEvent,
         path: servicePath + "/firehose/items",
         tokenProvider: this.firehoseTokenProvider
       }));
@@ -1134,6 +1175,25 @@ var Feeds = function () {
   }]);
   return Feeds;
 }();
+
+function validateFirehoseCallbacks(callbacks) {
+  var defined = Object.keys(callbacks).filter(function (k) {
+    return callbacks[k] !== undefined;
+  }).map(function (k) {
+    return { name: k, callback: callbacks[k] };
+  });
+  defined.forEach(function (_ref4) {
+    var name = _ref4.name,
+        callback = _ref4.callback;
+
+    if (typeof callback !== "function") {
+      throw new TypeError(name + " must be a function, got " + callback);
+    }
+  });
+  if (defined.length === 0) {
+    throw new TypeError("Must provide at least one of onPublish, onSubscribe, or onUnsubscribe");
+  }
+}
 
 return Feeds;
 
