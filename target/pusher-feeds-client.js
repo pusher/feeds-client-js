@@ -1156,9 +1156,7 @@ var Feeds = function () {
           onUnsubscribe = _ref3.onUnsubscribe,
           options = objectWithoutProperties(_ref3, ["onPublish", "onSubscribe", "onUnsubscribe"]);
 
-      if (typeof onPublish !== "function" && typeof onSubscribe !== "function" && typeof onUnsubscribe !== "function") {
-        throw new TypeError("One of onPublish, onSubscribe, or onUnsubscribe must be a function");
-      }
+      validateFirehoseCallbacks({ onPublish: onPublish, onSubscribe: onSubscribe, onUnsubscribe: onUnsubscribe });
       var onEvent = function onEvent(event) {
         if (event.event_type === 0 && onPublish) {
           onPublish(event);
@@ -1177,6 +1175,25 @@ var Feeds = function () {
   }]);
   return Feeds;
 }();
+
+function validateFirehoseCallbacks(callbacks) {
+  var defined = Object.keys(callbacks).filter(function (k) {
+    return callbacks[k] !== undefined;
+  }).map(function (k) {
+    return { name: k, callback: callbacks[k] };
+  });
+  if (defined.length === 0) {
+    throw new TypeError("Must provide at least one of onPublish, onSubscribe, or onUnsubscribe");
+  }
+  defined.forEach(function (_ref4) {
+    var name = _ref4.name,
+        callback = _ref4.callback;
+
+    if (typeof callback !== "function") {
+      throw new TypeError(name + " must be a function, got " + callback);
+    }
+  });
+}
 
 return Feeds;
 

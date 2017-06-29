@@ -58,13 +58,7 @@ export default class Feeds {
   }
 
   firehose({ onPublish, onSubscribe, onUnsubscribe, ...options } = {}) {
-    if (
-      typeof onPublish !== "function" &&
-      typeof onSubscribe !== "function" &&
-      typeof onUnsubscribe !== "function"
-    ) {
-      throw new TypeError(`One of onPublish, onSubscribe, or onUnsubscribe must be a function`);
-    }
+    validateFirehoseCallbacks({ onPublish, onSubscribe, onUnsubscribe });
     const onEvent = event => {
       if (event.event_type === 0 && onPublish) {
         onPublish(event);
@@ -81,4 +75,18 @@ export default class Feeds {
       tokenProvider: this.firehoseTokenProvider,
     });
   }
+}
+
+function validateFirehoseCallbacks(callbacks) {
+  const defined = Object.keys(callbacks)
+    .filter(k => callbacks[k] !== undefined)
+    .map(k => ({ name: k, callback: callbacks[k] }));
+  if (defined.length === 0) {
+    throw new TypeError(`Must provide at least one of onPublish, onSubscribe, or onUnsubscribe`);
+  }
+  defined.forEach(({ name, callback }) => {
+    if (typeof callback !== "function") {
+      throw new TypeError(`${ name } must be a function, got ${ callback }`);
+    }
+  });
 }
