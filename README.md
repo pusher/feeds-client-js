@@ -80,8 +80,6 @@ object with the following properties.
   `tailSize` items will be retrieved, followed by live items as they are
   published (`lastEventId` takes precedence if both are provided)
 
-- `onOpening`: [optional] callback to fire when the subscription is opening
-
 - `onOpen`: [optional] callback to fire when the subscription is open
 
 - `onEnd`: [optional] callback to fire when the subscription ends normally
@@ -155,8 +153,6 @@ single options object with the following properties
 - `onSubscribe`: callback to fire when a Subscribe event is received
 
 - `onUnsubscribe`: callback to fire when an Unsubscribe event is received
-
-- `onOpening`: [optional] callback to fire when the subscription is opening
 
 - `onOpen`: [optional] callback to fire when the subscription is open
 
