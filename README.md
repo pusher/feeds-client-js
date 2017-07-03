@@ -51,8 +51,7 @@ Takes a single options object with the following properties.
   `api-ceres.pusherplatform.io`
 
 - `authEndpiont`: [optional] the endpoint to use to request tokens for access
-  to private feeds; see [auth
-  docs](https://pusher-mimir.herokuapp.com/feeds/auth/)
+  to [private feeds](https://pusher-mimir.herokuapp.com/feeds/private-feeds/)
 
 - `authData`: [optional] data to pass to the auth endpoint along with token
   requests
@@ -66,10 +65,9 @@ queries can then be made. Takes a `feedId`.
 
 Subscribe to receive new items published to `feed`. A subscription can be
 resumed from some previously seen item by providing a `lastEventId`, or can be
-initiated with some initial state by providing a `tailSize`. Private feeds
-require `READ` permission – see [auth
-docs](https://pusher-mimir.herokuapp.com/feeds/auth/). Takes a single options
-object with the following properties.
+initiated with some initial state by providing a `tailSize`. [Private
+feeds](https://pusher-mimir.herokuapp.com/feeds/private-feeds/) require `READ`
+permission. Takes a single options object with the following properties.
 
 - `onItem`: [required] callback to handle items, takes each item as a parameter
 
@@ -104,9 +102,10 @@ Items are passed to the `onItem` callback with the following format
 
 ### `feed.getHistory`
 
-Query a `feed` for historical items. Private feeds require `READ` permission –
-see [auth docs](https://pusher-mimir.herokuapp.com/feeds/auth/). Takes a single
-(optional) options object with the following properties.
+Query a `feed` for historical items. [Private
+feeds](https://pusher-mimir.herokuapp.com/feeds/private-feeds/) require `READ`
+permission. Takes a single (optional) options object with the following
+properties.
 
 - `fromId`: [optional] look back in the past from this ID; retrieves items
   _older_ than this ID – if not provided, retrieves the most recently published
@@ -134,8 +133,8 @@ the following format.
 ### `feeds.list`
 
 List non-empty feeds. This method requires `ADMIN` permission – see [auth
-docs](https://pusher-mimir.herokuapp.com/feeds/auth/). Takes a single options
-object with the following properties.
+docs](https://pusher-mimir.herokuapp.com/feeds/reference/http/#authorization).
+Takes a single options object with the following properties.
 
 - `prefix`: [optional] only return those feeds that start with this string
 
@@ -145,8 +144,9 @@ object with the following properties.
 
 Subscribe to the firehose for this provisioned service to see all events and
 subscriptions on a single subscription. This method requires `ADMIN` permission
-– see [auth docs](https://pusher-mimir.herokuapp.com/feeds/auth/). Takes a
-single options object with the following properties
+– see [auth
+docs](https://pusher-mimir.herokuapp.com/feeds/reference/http/#authorization).
+Takes a single options object with the following properties
 
 - `onPublish`: callback to fire when a Publish event is received
 
