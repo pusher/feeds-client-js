@@ -6,8 +6,6 @@ import { parseResponse, queryString } from "./utils";
 
 export default class Feeds {
   constructor({ serviceId, cluster, authData = {}, authEndpoint } = {}) {
-    // TODO remove. should be set upstream
-    cluster = cluster || "api-ceres.pusherplatform.io";
     this.authData = authData;
     this.authEndpoint = authEndpoint;
     if (!serviceId || !serviceId.match(serviceIdRegex)) {

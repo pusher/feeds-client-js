@@ -1298,9 +1298,9 @@ punycode@^1.4.1:
   version "1.4.1"
   resolved "https://registry.yarnpkg.com/punycode/-/punycode-1.4.1.tgz#c0d5a63b2718800ad8e1eb0fa5269c84dd41845e"
 
-pusher-platform-js@^0.3.3:
-  version "0.3.3"
-  resolved "https://registry.yarnpkg.com/pusher-platform-js/-/pusher-platform-js-0.3.3.tgz#196b87f49abf0b7e67b27d78a8d3c2e0c0efc4c2"
+pusher-platform-js@^0.4.0:
+  version "0.4.0"
+  resolved "https://registry.yarnpkg.com/pusher-platform-js/-/pusher-platform-js-0.4.0.tgz#6251c66d5ce0813d2ee4079be5c48ee0bf97bae0"
   dependencies:
     jwt-simple "^0.5.1"
 

@@ -312,17 +312,18 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
                                     var err = _this.onChunk(); // might transition our state from OPEN -> ENDING
                                     _this.assertState(['OPEN', 'ENDING']);
                                     if (err != null) {
-                                        _this.xhr.abort();
+                                        _this.state = SubscriptionState.ENDED;
+                                        if (err.statusCode != 204) {
+                                            if (_this.options.onError) {
+                                                _this.options.onError(err);
+                                            }
+                                        }
                                         // Because we abort()ed, we will get no more calls to our onreadystatechange handler,
                                         // and so we will not call the event handler again.
                                         // Finish with options.onError instead of the options.onEnd.
-                                        _this.state = SubscriptionState.ENDED;
-                                        if (_this.options.onError) {
-                                            _this.options.onError(err);
-                                        }
                                     } else {
-                                        // We consumed some response text, and all's fine. We expect more text.
-                                    }
+                                            // We consumed some response text, and all's fine. We expect more text.
+                                        }
                                 } else {
                                     // Error response. Wait until the response completes (state 4) before erroring.
                                     _this.assertState(['OPENING']);
@@ -340,10 +341,16 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
                                     var err = _this.onChunk();
                                     if (err !== null && err !== undefined) {
                                         _this.state = SubscriptionState.ENDED;
-                                        if (_this.options.onError) {
-                                            _this.options.onError(err);
+                                        if (err.statusCode === 204) {
+                                            if (_this.options.onEnd) {
+                                                _this.options.onEnd();
+                                            }
+                                        } else {
+                                            if (_this.options.onError) {
+                                                _this.options.onError(err);
+                                            }
                                         }
-                                    } else if (_this.state !== SubscriptionState.ENDING) {
+                                    } else if (_this.state <= SubscriptionState.ENDING) {
                                         if (_this.options.onError) {
                                             _this.options.onError(new Error("HTTP response ended without receiving EOS message"));
                                         }
@@ -363,11 +370,6 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
                                         _this.options.onError(base_client_1.ErrorResponse.fromXHR(_this.xhr));
                                     }
                                 }
-                            }
-                        };
-                        xhr.onerror = function (event) {
-                            if (_this.options.onError) {
-                                _this.options.onError(new base_client_1.NetworkError(event));
                             }
                         };
                     }
@@ -673,13 +675,13 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
                 Object.defineProperty(exports, "__esModule", { value: true });
                 var base_client_1 = __webpack_require__(0);
                 var logger_1 = __webpack_require__(3);
-                var DEFAULT_CLUSTER = "api-ceres.kube.pusherplatform.io";
+                var DEFAULT_CLUSTER = "api-ceres.pusherplatform.io";
                 var App = function () {
                     function App(options) {
                         this.serviceId = options.serviceId;
                         this.tokenProvider = options.tokenProvider;
                         this.client = options.client || new base_client_1.BaseClient({
-                            cluster: options.cluster || DEFAULT_CLUSTER,
+                            cluster: options.cluster ? sanitizeCluster(options.cluster) : DEFAULT_CLUSTER,
                             encrypted: options.encrypted
                         });
                         if (options.logger) {
@@ -732,6 +734,10 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
                     return App;
                 }();
                 exports.default = App;
+                function sanitizeCluster(cluster) {
+                    return cluster.replace(/^[^\/:]*:\/\//, "") // remove schema
+                    .replace(/\/$/, ""); // remove trailing slash
+                }
 
                 /***/
             },
@@ -742,9 +748,13 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
 
                 Object.defineProperty(exports, "__esModule", { value: true });
                 var app_1 = __webpack_require__(4);
+                exports.App = app_1.default;
                 var base_client_1 = __webpack_require__(0);
+                exports.BaseClient = base_client_1.BaseClient;
                 var resumable_subscription_1 = __webpack_require__(2);
+                exports.ResumableSubscription = resumable_subscription_1.ResumableSubscription;
                 var subscription_1 = __webpack_require__(1);
+                exports.Subscription = subscription_1.Subscription;
                 exports.default = {
                     App: app_1.default,
                     BaseClient: base_client_1.BaseClient,
@@ -860,7 +870,7 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
 
 var PusherPlatform = unwrapExports(pusherPlatform);
 
-var cacheExpiryTolerance = 60; // 60 seconds (in seconds)
+var cacheExpiryTolerance = 10 * 60; // 10 minutes (in seconds)
 var defaultAuthEndpoint = "/feeds/tokens";
 var feedIdRegex = /^[a-zA-Z0-9-]+$/;
 var serviceIdRegex = /^[a-zA-Z0-9-]+$/;
@@ -1092,8 +1102,6 @@ var Feeds = function () {
 
     classCallCheck(this, Feeds);
 
-    // TODO remove. should be set upstream
-    cluster = cluster || "api-ceres.pusherplatform.io";
     this.authData = authData;
     this.authEndpoint = authEndpoint;
     if (!serviceId || !serviceId.match(serviceIdRegex)) {
