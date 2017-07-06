@@ -873,7 +873,7 @@ var PusherPlatform = unwrapExports(pusherPlatform);
 var cacheExpiryTolerance = 10 * 60; // 10 minutes (in seconds)
 var defaultAuthEndpoint = "/feeds/tokens";
 var feedIdRegex = /^[a-zA-Z0-9-]+$/;
-var serviceIdRegex = /^[a-zA-Z0-9-]+$/;
+var instanceRegex = /^v([1-9][0-9]*):([a-zA-Z0-9-]+):([a-zA-Z0-9-]+)$/;
 var servicePath = "services/feeds/v1";
 var tokenProviderTimeout = 30 * 1000; // 30 seconds (in ms)
 
@@ -1094,18 +1094,18 @@ var TokenProvider = function () {
 var Feeds = function () {
   function Feeds() {
     var _ref = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
-        serviceId = _ref.serviceId,
-        cluster = _ref.cluster,
+        instance = _ref.instance,
         _ref$authData = _ref.authData,
         authData = _ref$authData === undefined ? {} : _ref$authData,
-        authEndpoint = _ref.authEndpoint;
+        authEndpoint = _ref.authEndpoint,
+        host = _ref.host;
 
     classCallCheck(this, Feeds);
 
     this.authData = authData;
     this.authEndpoint = authEndpoint;
-    if (!serviceId || !serviceId.match(serviceIdRegex)) {
-      throw new TypeError("Invalid serviceId: " + serviceId);
+    if (!instance || !instance.match(instanceRegex)) {
+      throw new TypeError("Invalid instance: " + instance);
     }
     this.listTokenProvider = new TokenProvider({
       authEndpoint: this.authEndpoint,
@@ -1121,7 +1121,7 @@ var Feeds = function () {
         action: "READ"
       })
     });
-    this.app = new PusherPlatform.App({ serviceId: serviceId, cluster: cluster });
+    this.app = new PusherPlatform.App({ instance: instance, host: host });
   }
 
   createClass(Feeds, [{

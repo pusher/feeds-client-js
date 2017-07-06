@@ -1,15 +1,15 @@
 import PusherPlatform from "pusher-platform-js";
 import Feed from "./feed";
 import TokenProvider from "./token-provider";
-import { servicePath, feedIdRegex, serviceIdRegex } from "./constants";
+import { servicePath, feedIdRegex, instanceRegex } from "./constants";
 import { parseResponse, queryString } from "./utils";
 
 export default class Feeds {
-  constructor({ serviceId, cluster, authData = {}, authEndpoint } = {}) {
+  constructor({ instance, authData = {}, authEndpoint, host } = {}) {
     this.authData = authData;
     this.authEndpoint = authEndpoint;
-    if (!serviceId || !serviceId.match(serviceIdRegex)) {
-      throw new TypeError(`Invalid serviceId: ${ serviceId }`);
+    if (!instance || !instance.match(instanceRegex)) {
+      throw new TypeError(`Invalid instance: ${ instance }`);
     }
     this.listTokenProvider = new TokenProvider({
       authEndpoint: this.authEndpoint,
@@ -27,7 +27,7 @@ export default class Feeds {
         action: "READ",
       }
     });
-    this.app = new PusherPlatform.App({ serviceId, cluster });
+    this.app = new PusherPlatform.App({ instance, host });
   }
 
   list({ prefix, limit } = {}) {
