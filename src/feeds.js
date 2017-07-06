@@ -5,7 +5,14 @@ import { servicePath, feedIdRegex, serviceIdRegex } from "./constants";
 import { parseResponse, queryString } from "./utils";
 
 export default class Feeds {
-  constructor({ serviceId, cluster, authData = {}, authEndpoint } = {}) {
+  constructor({
+    serviceId,
+    cluster,
+    authData = {},
+    authEndpoint,
+    logLevel,
+    logger,
+  } = {}) {
     this.authData = authData;
     this.authEndpoint = authEndpoint;
     if (!serviceId || !serviceId.match(serviceIdRegex)) {
@@ -27,7 +34,10 @@ export default class Feeds {
         action: "READ",
       }
     });
-    this.app = new PusherPlatform.App({ serviceId, cluster });
+    if (!logger && logLevel) {
+      logger = new PusherPlatform.ConsoleLogger(logLevel);
+    }
+    this.app = new PusherPlatform.App({ serviceId, cluster, logger });
   }
 
   list({ prefix, limit } = {}) {
