@@ -162,7 +162,8 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
                 var NetworkError = function (_super) {
                     __extends(NetworkError, _super);
                     function NetworkError(error) {
-                        var _this = _super.call(this) || this;
+                        var _this = _super.call(this, error) || this;
+                        Object.setPrototypeOf(_this, NetworkError.prototype);
                         _this.error = error;
                         return _this;
                     }
@@ -441,6 +442,8 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
                                     _this.assertState(['OPENING', 'OPEN', 'ENDED']);
                                     if (_this.state === SubscriptionState.ENDED) {
                                         // We aborted the request deliberately, and called onError/onEnd elsewhere.
+                                    } else if (_this.xhr.status === 0) {
+                                        _this.options.onError(new base_client_1.NetworkError("Connection lost."));
                                     } else {
                                         _this.options.onError(base_client_1.ErrorResponse.fromXHR(_this.xhr));
                                     }
@@ -626,6 +629,7 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
                                 if (_this.options.onOpen) {
                                     _this.options.onOpen();
                                 }
+                                _this.retryStrategy.reset(); //We need to reset the counter once the connection has been re-established.
                             },
                             onEvent: function (event) {
                                 _this.assertState(['OPEN']);
@@ -644,7 +648,11 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
                             onError: function (error) {
                                 _this.state = ResumableSubscriptionState.OPENING;
                                 _this.retryStrategy.attemptRetry(error).then(function () {
-                                    _this.tryNow;
+                                    if (_this.options.onRetry !== undefined) {
+                                        _this.options.onRetry();
+                                    } else {
+                                        _this.tryNow();
+                                    }
                                 }).catch(function (error) {
                                     _this.state = ResumableSubscriptionState.ENDED;
                                     if (_this.options.onError) {
@@ -703,9 +711,13 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
                         this.limit = 6;
                         this.retryCount = 0;
                         this.maxBackoffMilis = 30000;
-                        this.currentBackoffMilis = 1000;
+                        this.defaultBackoffMilis = 1000;
+                        this.currentBackoffMilis = this.defaultBackoffMilis;
                         if (options.limit) this.limit = options.limit;
-                        if (options.initialBackoffMilis) this.currentBackoffMilis = options.initialBackoffMilis;
+                        if (options.initialBackoffMilis) {
+                            this.currentBackoffMilis = options.initialBackoffMilis;
+                            this.defaultBackoffMilis = options.defaultBackoffMilis;
+                        }
                         if (options.maxBackoffMilis) this.maxBackoffMilis = options.maxBackoffMilis;
                         if (options.logger !== undefined) {
                             this.logger = options.logger;
@@ -760,6 +772,10 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
                         }
                         return retryable;
                     };
+                    ExponentialBackoffRetryStrategy.prototype.reset = function () {
+                        this.retryCount = 0;
+                        this.currentBackoffMilis = this.defaultBackoffMilis;
+                    };
                     ExponentialBackoffRetryStrategy.prototype.calulateMilisToRetry = function () {
                         if (this.currentBackoffMilis >= this.maxBackoffMilis || this.currentBackoffMilis * 2 >= this.maxBackoffMilis) {
                             return this.maxBackoffMilis;
@@ -793,6 +809,9 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
                 var DEFAULT_CLUSTER = "api-ceres.pusherplatform.io";
                 var App = function () {
                     function App(options) {
+                        if (!options.serviceId) {
+                            throw new Error('Expected `serviceId` property in App options');
+                        }
                         this.serviceId = options.serviceId;
                         this.tokenProvider = options.tokenProvider;
                         this.client = options.client || new base_client_1.BaseClient({
