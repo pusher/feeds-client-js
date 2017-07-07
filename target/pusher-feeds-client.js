@@ -99,7 +99,7 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
                 /******/__webpack_require__.p = "";
                 /******/
                 /******/ // Load entry module and return exports
-                /******/return __webpack_require__(__webpack_require__.s = 5);
+                /******/return __webpack_require__(__webpack_require__.s = 6);
                 /******/
             }(
             /************************************************************************/
@@ -124,8 +124,8 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
                     };
                 }();
                 Object.defineProperty(exports, "__esModule", { value: true });
-                var subscription_1 = __webpack_require__(1);
-                var resumable_subscription_1 = __webpack_require__(2);
+                var subscription_1 = __webpack_require__(2);
+                var resumable_subscription_1 = __webpack_require__(3);
                 function responseHeadersObj(headerStr) {
                     var headers = {};
                     if (!headerStr) {
@@ -162,7 +162,8 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
                 var NetworkError = function (_super) {
                     __extends(NetworkError, _super);
                     function NetworkError(error) {
-                        var _this = _super.call(this) || this;
+                        var _this = _super.call(this, error) || this;
+                        Object.setPrototypeOf(_this, NetworkError.prototype);
                         _this.error = error;
                         return _this;
                     }
@@ -243,6 +244,81 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
                 /***/
             },
             /* 1 */
+            /***/function (module, exports, __webpack_require__) {
+
+                "use strict";
+
+                Object.defineProperty(exports, "__esModule", { value: true });
+                var LogLevel;
+                (function (LogLevel) {
+                    LogLevel[LogLevel["VERBOSE"] = 1] = "VERBOSE";
+                    LogLevel[LogLevel["DEBUG"] = 2] = "DEBUG";
+                    LogLevel[LogLevel["INFO"] = 3] = "INFO";
+                    LogLevel[LogLevel["WARNING"] = 4] = "WARNING";
+                    LogLevel[LogLevel["ERROR"] = 5] = "ERROR";
+                })(LogLevel = exports.LogLevel || (exports.LogLevel = {}));
+                /**
+                 * Default implementation of the Logger. Wraps standards console calls.
+                 * Logs only calls that are at or above the threshold (verbose/debug/info/warn/error)
+                 * If error is passed, it will append the message to the error object.
+                 */
+                var ConsoleLogger = function () {
+                    function ConsoleLogger(threshold) {
+                        if (threshold === void 0) {
+                            threshold = 2;
+                        }
+                        this.threshold = threshold;
+                    }
+                    ConsoleLogger.prototype.log = function (logFunction, level, message, error) {
+                        if (level >= this.threshold) {
+                            var loggerSignature = "Logger." + LogLevel[level];
+                            if (error) {
+                                console.group();
+                                logFunction(loggerSignature + ": " + message);
+                                logFunction(error);
+                                console.groupEnd();
+                            } else {
+                                logFunction(loggerSignature + ": " + message);
+                            }
+                        }
+                    };
+                    ConsoleLogger.prototype.verbose = function (message, error) {
+                        this.log(console.log, LogLevel.VERBOSE, message, error);
+                    };
+                    ConsoleLogger.prototype.debug = function (message, error) {
+                        this.log(console.log, LogLevel.DEBUG, message, error);
+                    };
+                    ConsoleLogger.prototype.info = function (message, error) {
+                        this.log(console.info, LogLevel.INFO, message, error);
+                    };
+                    ConsoleLogger.prototype.warn = function (message, error) {
+                        this.log(console.warn, LogLevel.WARNING, message, error);
+                    };
+                    ConsoleLogger.prototype.error = function (message, error) {
+                        this.log(console.error, LogLevel.ERROR, message, error);
+                    };
+                    return ConsoleLogger;
+                }();
+                exports.ConsoleLogger = ConsoleLogger;
+                var EmptyLogger = function () {
+                    function EmptyLogger() {}
+                    EmptyLogger.prototype.verbose = function (message, error) {};
+                    
+                    EmptyLogger.prototype.debug = function (message, error) {};
+                    
+                    EmptyLogger.prototype.info = function (message, error) {};
+                    
+                    EmptyLogger.prototype.warn = function (message, error) {};
+                    
+                    EmptyLogger.prototype.error = function (message, error) {};
+                    
+                    return EmptyLogger;
+                }();
+                exports.EmptyLogger = EmptyLogger;
+
+                /***/
+            },
+            /* 2 */
             /***/function (module, exports, __webpack_require__) {
 
                 "use strict";
@@ -366,6 +442,8 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
                                     _this.assertState(['OPENING', 'OPEN', 'ENDED']);
                                     if (_this.state === SubscriptionState.ENDED) {
                                         // We aborted the request deliberately, and called onError/onEnd elsewhere.
+                                    } else if (_this.xhr.status === 0) {
+                                        _this.options.onError(new base_client_1.NetworkError("Connection lost."));
                                     } else {
                                         _this.options.onError(base_client_1.ErrorResponse.fromXHR(_this.xhr));
                                     }
@@ -486,14 +564,14 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
 
                 /***/
             },
-            /* 2 */
+            /* 3 */
             /***/function (module, exports, __webpack_require__) {
 
                 "use strict";
 
                 Object.defineProperty(exports, "__esModule", { value: true });
-                var subscription_1 = __webpack_require__(1);
-                var retry_strategy_1 = __webpack_require__(6);
+                var subscription_1 = __webpack_require__(2);
+                var retry_strategy_1 = __webpack_require__(4);
                 var ResumableSubscriptionState;
                 (function (ResumableSubscriptionState) {
                     ResumableSubscriptionState[ResumableSubscriptionState["UNOPENED"] = 0] = "UNOPENED";
@@ -527,10 +605,16 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
                         this.xhrSource = xhrSource;
                         this.options = options;
                         this.state = ResumableSubscriptionState.UNOPENED;
-                        this.retryStrategy = new retry_strategy_1.ExponentialBackoffRetryStrategy({});
                         this.assertState = assertState.bind(this, ResumableSubscriptionState);
                         this.lastEventIdReceived = options.lastEventId;
                         this.logger = options.logger;
+                        if (options.retryStrategy !== undefined) {
+                            this.retryStrategy = options.retryStrategy;
+                        } else {
+                            this.retryStrategy = new retry_strategy_1.ExponentialBackoffRetryStrategy({
+                                logger: this.logger
+                            });
+                        }
                     }
                     ResumableSubscription.prototype.tryNow = function () {
                         var _this = this;
@@ -545,6 +629,7 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
                                 if (_this.options.onOpen) {
                                     _this.options.onOpen();
                                 }
+                                _this.retryStrategy.reset(); //We need to reset the counter once the connection has been re-established.
                             },
                             onEvent: function (event) {
                                 _this.assertState(['OPEN']);
@@ -563,7 +648,11 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
                             onError: function (error) {
                                 _this.state = ResumableSubscriptionState.OPENING;
                                 _this.retryStrategy.attemptRetry(error).then(function () {
-                                    _this.tryNow;
+                                    if (_this.options.onRetry !== undefined) {
+                                        _this.options.onRetry();
+                                    } else {
+                                        _this.tryNow();
+                                    }
                                 }).catch(function (error) {
                                     _this.state = ResumableSubscriptionState.ENDED;
                                     if (_this.options.onError) {
@@ -586,8 +675,8 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
                     ResumableSubscription.prototype.open = function () {
                         this.tryNow();
                     };
-                    ResumableSubscription.prototype.unsubscribe = function () {
-                        this.subscription.unsubscribe(); // We'll get onEnd and bubble this up
+                    ResumableSubscription.prototype.unsubscribe = function (error) {
+                        this.subscription.unsubscribe(error); // We'll get onEnd and bubble this up
                     };
                     return ResumableSubscription;
                 }();
@@ -595,72 +684,114 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
 
                 /***/
             },
-            /* 3 */
+            /* 4 */
             /***/function (module, exports, __webpack_require__) {
 
                 "use strict";
 
                 Object.defineProperty(exports, "__esModule", { value: true });
-                var LogLevel;
-                (function (LogLevel) {
-                    LogLevel[LogLevel["VERBOSE"] = 1] = "VERBOSE";
-                    LogLevel[LogLevel["DEBUG"] = 2] = "DEBUG";
-                    LogLevel[LogLevel["INFO"] = 3] = "INFO";
-                    LogLevel[LogLevel["WARNING"] = 4] = "WARNING";
-                    LogLevel[LogLevel["ERROR"] = 5] = "ERROR";
-                })(LogLevel = exports.LogLevel || (exports.LogLevel = {}));
-                var DefaultLogger = function () {
-                    function DefaultLogger(treshold) {
-                        if (treshold === void 0) {
-                            treshold = 2;
-                        }
-                        this.treshold = treshold;
+                var base_client_1 = __webpack_require__(0);
+                var logger_1 = __webpack_require__(1);
+                var Retry = function () {
+                    function Retry(waitTimeMilis) {
+                        this.waitTimeMilis = waitTimeMilis;
                     }
-                    DefaultLogger.prototype.log = function (level, message, error) {
-                        if (level >= this.treshold) {
-                            console.log(message);
-                            if (error) {
-                                console.log(error);
+                    return Retry;
+                }();
+                exports.Retry = Retry;
+                var DoNotRetry = function () {
+                    function DoNotRetry(error) {
+                        this.error = error;
+                    }
+                    return DoNotRetry;
+                }();
+                exports.DoNotRetry = DoNotRetry;
+                var ExponentialBackoffRetryStrategy = function () {
+                    function ExponentialBackoffRetryStrategy(options) {
+                        this.limit = 6;
+                        this.retryCount = 0;
+                        this.maxBackoffMilis = 30000;
+                        this.defaultBackoffMilis = 1000;
+                        this.currentBackoffMilis = this.defaultBackoffMilis;
+                        if (options.limit) this.limit = options.limit;
+                        if (options.initialBackoffMilis) {
+                            this.currentBackoffMilis = options.initialBackoffMilis;
+                            this.defaultBackoffMilis = options.defaultBackoffMilis;
+                        }
+                        if (options.maxBackoffMilis) this.maxBackoffMilis = options.maxBackoffMilis;
+                        if (options.logger !== undefined) {
+                            this.logger = options.logger;
+                        } else {
+                            this.logger = new logger_1.EmptyLogger();
+                        }
+                    }
+                    ExponentialBackoffRetryStrategy.prototype.shouldRetry = function (error) {
+                        this.logger.verbose(this.constructor.name + ":  Error received", error);
+                        if (this.retryCount >= this.limit && this.limit > 0) {
+                            this.logger.verbose(this.constructor.name + ":  Retry count is over the maximum limit: " + this.limit);
+                            return new DoNotRetry(error);
+                        }
+                        var retryable = this.isRetryable(error);
+                        if (retryable.isRetryable) {
+                            if (retryable.backoffMillis) {
+                                this.retryCount += 1;
+                                return new Retry(retryable.backoffMillis);
+                            } else {
+                                this.currentBackoffMilis = this.calulateMilisToRetry();
+                                this.retryCount += 1;
+                                this.logger.verbose(this.constructor.name + ": Will attempt to retry in: " + this.currentBackoffMilis);
+                                return new Retry(this.currentBackoffMilis);
+                            }
+                        } else {
+                            this.logger.verbose(this.constructor.name + ": Error is not retryable", error);
+                            return new DoNotRetry(error);
+                        }
+                    };
+                    ExponentialBackoffRetryStrategy.prototype.attemptRetry = function (error) {
+                        var _this = this;
+                        return new Promise(function (resolve, reject) {
+                            var shouldRetry = _this.shouldRetry(error);
+                            if (shouldRetry instanceof DoNotRetry) {
+                                reject(error);
+                            } else if (shouldRetry instanceof Retry) {
+                                window.setTimeout(resolve, shouldRetry.waitTimeMilis);
+                            }
+                        });
+                    };
+                    ExponentialBackoffRetryStrategy.prototype.isRetryable = function (error) {
+                        var retryable = {
+                            isRetryable: false
+                        };
+                        //We allow network errors
+                        if (error instanceof base_client_1.NetworkError) retryable.isRetryable = true;else if (error instanceof base_client_1.ErrorResponse) {
+                            //Only retry after is allowed
+                            if (error.headers["retry-after"]) {
+                                retryable.isRetryable = true;
+                                retryable.backoffMillis = parseInt(error.headers["retry-after"]) * 1000;
                             }
                         }
+                        return retryable;
                     };
-                    DefaultLogger.prototype.verbose = function (message, error) {
-                        this.log(LogLevel.VERBOSE, message, error);
+                    ExponentialBackoffRetryStrategy.prototype.reset = function () {
+                        this.retryCount = 0;
+                        this.currentBackoffMilis = this.defaultBackoffMilis;
                     };
-                    DefaultLogger.prototype.debug = function (message, error) {
-                        this.log(LogLevel.DEBUG, message, error);
+                    ExponentialBackoffRetryStrategy.prototype.calulateMilisToRetry = function () {
+                        if (this.currentBackoffMilis >= this.maxBackoffMilis || this.currentBackoffMilis * 2 >= this.maxBackoffMilis) {
+                            return this.maxBackoffMilis;
+                        }
+                        if (this.retryCount > 0) {
+                            return this.currentBackoffMilis * 2;
+                        }
+                        return this.currentBackoffMilis;
                     };
-                    DefaultLogger.prototype.info = function (message, error) {
-                        this.log(LogLevel.INFO, message, error);
-                    };
-                    DefaultLogger.prototype.warn = function (message, error) {
-                        this.log(LogLevel.WARNING, message, error);
-                    };
-                    DefaultLogger.prototype.error = function (message, error) {
-                        this.log(LogLevel.ERROR, message, error);
-                    };
-                    return DefaultLogger;
+                    return ExponentialBackoffRetryStrategy;
                 }();
-                exports.DefaultLogger = DefaultLogger;
-                var EmptyLogger = function () {
-                    function EmptyLogger() {}
-                    EmptyLogger.prototype.verbose = function (message, error) {};
-                    
-                    EmptyLogger.prototype.debug = function (message, error) {};
-                    
-                    EmptyLogger.prototype.info = function (message, error) {};
-                    
-                    EmptyLogger.prototype.warn = function (message, error) {};
-                    
-                    EmptyLogger.prototype.error = function (message, error) {};
-                    
-                    return EmptyLogger;
-                }();
-                exports.EmptyLogger = EmptyLogger;
+                exports.ExponentialBackoffRetryStrategy = ExponentialBackoffRetryStrategy;
 
                 /***/
             },
-            /* 4 */
+            /* 5 */
             /***/function (module, exports, __webpack_require__) {
 
                 "use strict";
@@ -674,20 +805,23 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
                 };
                 Object.defineProperty(exports, "__esModule", { value: true });
                 var base_client_1 = __webpack_require__(0);
-                var logger_1 = __webpack_require__(3);
+                var logger_1 = __webpack_require__(1);
                 var DEFAULT_CLUSTER = "api-ceres.pusherplatform.io";
                 var App = function () {
                     function App(options) {
+                        if (!options.serviceId) {
+                            throw new Error('Expected `serviceId` property in App options');
+                        }
                         this.serviceId = options.serviceId;
                         this.tokenProvider = options.tokenProvider;
                         this.client = options.client || new base_client_1.BaseClient({
                             cluster: options.cluster ? sanitizeCluster(options.cluster) : DEFAULT_CLUSTER,
                             encrypted: options.encrypted
                         });
-                        if (options.logger) {
+                        if (options.logger !== undefined) {
                             this.logger = options.logger;
                         } else {
-                            this.logger = new logger_1.DefaultLogger();
+                            this.logger = new logger_1.ConsoleLogger();
                         }
                     }
                     App.prototype.request = function (options) {
@@ -721,6 +855,7 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
                         return subscription;
                     };
                     App.prototype.resumableSubscribe = function (options) {
+                        if (!options.logger) options.logger = this.logger;
                         options.logger = this.logger;
                         options.path = this.absPath(options.path);
                         var tokenProvider = options.tokenProvider || this.tokenProvider;
@@ -741,125 +876,32 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
 
                 /***/
             },
-            /* 5 */
-            /***/function (module, exports, __webpack_require__) {
-
-                "use strict";
-
-                Object.defineProperty(exports, "__esModule", { value: true });
-                var app_1 = __webpack_require__(4);
-                exports.App = app_1.default;
-                var base_client_1 = __webpack_require__(0);
-                exports.BaseClient = base_client_1.BaseClient;
-                var resumable_subscription_1 = __webpack_require__(2);
-                exports.ResumableSubscription = resumable_subscription_1.ResumableSubscription;
-                var subscription_1 = __webpack_require__(1);
-                exports.Subscription = subscription_1.Subscription;
-                exports.default = {
-                    App: app_1.default,
-                    BaseClient: base_client_1.BaseClient,
-                    ResumableSubscription: resumable_subscription_1.ResumableSubscription,
-                    Subscription: subscription_1.Subscription
-                };
-
-                /***/
-            },
             /* 6 */
             /***/function (module, exports, __webpack_require__) {
 
                 "use strict";
 
                 Object.defineProperty(exports, "__esModule", { value: true });
+                var app_1 = __webpack_require__(5);
+                exports.App = app_1.default;
                 var base_client_1 = __webpack_require__(0);
-                var logger_1 = __webpack_require__(3);
-                var Retry = function () {
-                    function Retry(waitTimeMilis) {
-                        this.waitTimeMilis = waitTimeMilis;
-                    }
-                    return Retry;
-                }();
-                exports.Retry = Retry;
-                var DoNotRetry = function () {
-                    function DoNotRetry(error) {
-                        this.error = error;
-                    }
-                    return DoNotRetry;
-                }();
-                exports.DoNotRetry = DoNotRetry;
-                var ExponentialBackoffRetryStrategy = function () {
-                    function ExponentialBackoffRetryStrategy(options) {
-                        this.limit = 6;
-                        this.retryCount = 0;
-                        this.maxBackoffMilis = 30000;
-                        this.currentBackoffMilis = 1000;
-                        if (options.limit) this.limit = options.limit;
-                        if (options.initialBackoffMilis) this.currentBackoffMilis = options.initialBackoffMilis;
-                        if (options.maxBackoffMilis) this.maxBackoffMilis = options.maxBackoffMilis;
-                        if (options.logger) {
-                            this.logger = options.logger;
-                        } else {
-                            this.logger = new logger_1.DefaultLogger();
-                        }
-                    }
-                    ExponentialBackoffRetryStrategy.prototype.shouldRetry = function (error) {
-                        this.logger.debug(this.constructor.name + ":  Error received", error);
-                        if (this.retryCount >= this.limit && this.limit > 0) {
-                            this.logger.debug(this.constructor.name + ":  Retry count is over the maximum limit: " + this.limit);
-                            return new DoNotRetry(error);
-                        }
-                        var retryable = this.isRetryable(error);
-                        if (retryable.isRetryable) {
-                            if (retryable.backoffMillis) {
-                                this.retryCount += 1;
-                                return new Retry(retryable.backoffMillis);
-                            } else {
-                                this.currentBackoffMilis = this.calulateMilisToRetry();
-                                this.retryCount += 1;
-                                this.logger.debug(this.constructor.name + ": Will attempt to retry in: " + this.currentBackoffMilis);
-                                return new Retry(this.currentBackoffMilis);
-                            }
-                        } else {
-                            this.logger.debug(this.constructor.name + ": Error is not retryable", error);
-                            return new DoNotRetry(error);
-                        }
-                    };
-                    ExponentialBackoffRetryStrategy.prototype.attemptRetry = function (error) {
-                        var _this = this;
-                        return new Promise(function (resolve, reject) {
-                            var shouldRetry = _this.shouldRetry(error);
-                            if (shouldRetry instanceof DoNotRetry) {
-                                reject(error);
-                            } else if (shouldRetry instanceof Retry) {
-                                window.setTimeout(resolve, shouldRetry.waitTimeMilis);
-                            }
-                        });
-                    };
-                    ExponentialBackoffRetryStrategy.prototype.isRetryable = function (error) {
-                        var retryable = {
-                            isRetryable: false
-                        };
-                        //We allow network errors
-                        if (error instanceof base_client_1.NetworkError) retryable.isRetryable = true;else if (error instanceof base_client_1.ErrorResponse) {
-                            //Only retry after is allowed
-                            if (error.headers["retry-after"]) {
-                                retryable.isRetryable = true;
-                                retryable.backoffMillis = parseInt(error.headers["retry-after"]) * 1000;
-                            }
-                        }
-                        return retryable;
-                    };
-                    ExponentialBackoffRetryStrategy.prototype.calulateMilisToRetry = function () {
-                        if (this.currentBackoffMilis >= this.maxBackoffMilis || this.currentBackoffMilis * 2 >= this.maxBackoffMilis) {
-                            return this.maxBackoffMilis;
-                        }
-                        if (this.retryCount > 0) {
-                            return this.currentBackoffMilis * 2;
-                        }
-                        return this.currentBackoffMilis;
-                    };
-                    return ExponentialBackoffRetryStrategy;
-                }();
-                exports.ExponentialBackoffRetryStrategy = ExponentialBackoffRetryStrategy;
+                exports.BaseClient = base_client_1.BaseClient;
+                var logger_1 = __webpack_require__(1);
+                exports.ConsoleLogger = logger_1.ConsoleLogger;
+                exports.EmptyLogger = logger_1.EmptyLogger;
+                var resumable_subscription_1 = __webpack_require__(3);
+                exports.ResumableSubscription = resumable_subscription_1.ResumableSubscription;
+                var retry_strategy_1 = __webpack_require__(4);
+                exports.ExponentialBackoffRetryStrategy = retry_strategy_1.ExponentialBackoffRetryStrategy;
+                var subscription_1 = __webpack_require__(2);
+                exports.Subscription = subscription_1.Subscription;
+                exports.default = {
+                    App: app_1.default,
+                    BaseClient: base_client_1.BaseClient,
+                    ResumableSubscription: resumable_subscription_1.ResumableSubscription, Subscription: subscription_1.Subscription,
+                    ExponentialBackoffRetryStrategy: retry_strategy_1.ExponentialBackoffRetryStrategy,
+                    ConsoleLogger: logger_1.ConsoleLogger, EmptyLogger: logger_1.EmptyLogger
+                };
 
                 /***/
             }]
@@ -1098,7 +1140,9 @@ var Feeds = function () {
         cluster = _ref.cluster,
         _ref$authData = _ref.authData,
         authData = _ref$authData === undefined ? {} : _ref$authData,
-        authEndpoint = _ref.authEndpoint;
+        authEndpoint = _ref.authEndpoint,
+        logLevel = _ref.logLevel,
+        logger = _ref.logger;
 
     classCallCheck(this, Feeds);
 
@@ -1121,7 +1165,10 @@ var Feeds = function () {
         action: "READ"
       })
     });
-    this.app = new PusherPlatform.App({ serviceId: serviceId, cluster: cluster });
+    if (!logger && logLevel) {
+      logger = new PusherPlatform.ConsoleLogger(logLevel);
+    }
+    this.app = new PusherPlatform.App({ serviceId: serviceId, cluster: cluster, logger: logger });
   }
 
   createClass(Feeds, [{

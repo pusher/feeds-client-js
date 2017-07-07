@@ -56,6 +56,22 @@ Takes a single options object with the following properties.
 - `authData`: [optional] data to pass to the auth endpoint along with token
   requests
 
+- `logLevel`: [optional] a number between 1 and 5, corresponding to `VERBOSE`,
+  `DEBUG`, `INFO`, `WARNING`, and `ERROR` respectively. 1 logs everything, 5
+  only logs errors etc.
+
+- `logger`: [optional] a cutom logger implementation, must conform to the following interface
+
+```ts
+interface Logger {
+    verbose(message: string, error?: Error);
+    debug(message: string, error?: Error);
+    info(message: string, error?: Error);
+    warn(message: string, error?: Error);
+    error(message: string, error?: Error);
+}
+```
+
 ### `feeds.feed`
 
 Returns a reference to a particular feed, from which subscriptions and history
