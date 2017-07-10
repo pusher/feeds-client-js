@@ -1,4 +1,3 @@
-import { servicePath } from "./constants";
 import { parseResponse, queryString } from "./utils";
 
 export default class Feed {
@@ -14,7 +13,7 @@ export default class Feed {
     }
     return this.app.resumableSubscribe({
       ...options,
-      path: this.itemsPath + queryString({
+      path: `feeds/${ this.feedId }/items` + queryString({
         // TODO change query parameter at the API level
         tail_size: options.previousItems,
       }),
@@ -26,15 +25,11 @@ export default class Feed {
   getHistory({ fromId, limit = 50 } = {}) {
     return parseResponse(this.app.request({
       method: "GET",
-      path: this.itemsPath + queryString({
+      path: `feeds/${ this.feedId }/items` + queryString({
         from_id: fromId,
         limit: limit,
       }),
       tokenProvider: this.readTokenProvider,
     }));
-  }
-
-  get itemsPath() {
-    return `${ servicePath }/feeds/${ this.feedId }/items`;
   }
 }

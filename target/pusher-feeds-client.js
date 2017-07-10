@@ -912,13 +912,6 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
 
 var PusherPlatform = unwrapExports(pusherPlatform);
 
-var cacheExpiryTolerance = 10 * 60; // 10 minutes (in seconds)
-var defaultAuthEndpoint = "/feeds/tokens";
-var feedIdRegex = /^[a-zA-Z0-9-]+$/;
-var serviceIdRegex = /^[a-zA-Z0-9-]+$/;
-var servicePath = "services/feeds/v1";
-var tokenProviderTimeout = 30 * 1000; // 30 seconds (in ms)
-
 function parseResponse(promise) {
   return new Promise(function (resolve, reject) {
     promise.then(function (response) {
@@ -1037,7 +1030,7 @@ var Feed = function () {
         throw new TypeError("Must provide an `onItem` callback");
       }
       return this.app.resumableSubscribe(_extends({}, options, {
-        path: this.itemsPath + queryString({
+        path: "feeds/" + this.feedId + "/items" + queryString({
           // TODO change query parameter at the API level
           tail_size: options.previousItems
         }),
@@ -1055,21 +1048,22 @@ var Feed = function () {
 
       return parseResponse(this.app.request({
         method: "GET",
-        path: this.itemsPath + queryString({
+        path: "feeds/" + this.feedId + "/items" + queryString({
           from_id: fromId,
           limit: limit
         }),
         tokenProvider: this.readTokenProvider
       }));
     }
-  }, {
-    key: "itemsPath",
-    get: function get$$1() {
-      return servicePath + "/feeds/" + this.feedId + "/items";
-    }
   }]);
   return Feed;
 }();
+
+var cacheExpiryTolerance = 10 * 60; // 10 minutes (in seconds)
+var defaultAuthEndpoint = "/feeds/tokens";
+var feedIdRegex = /^[a-zA-Z0-9-]+$/;
+var instanceRegex = /^v([1-9][0-9]*):([a-zA-Z0-9-]+):([a-zA-Z0-9-]+)$/;
+var tokenProviderTimeout = 30 * 1000; // 30 seconds (in ms)
 
 var TokenProvider = function () {
   function TokenProvider(_ref) {
@@ -1137,11 +1131,11 @@ var TokenProvider = function () {
 var Feeds = function () {
   function Feeds() {
     var _ref = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
-        serviceId = _ref.serviceId,
-        cluster = _ref.cluster,
         _ref$authData = _ref.authData,
         authData = _ref$authData === undefined ? {} : _ref$authData,
         authEndpoint = _ref.authEndpoint,
+        host = _ref.host,
+        instance = _ref.instance,
         logLevel = _ref.logLevel,
         logger = _ref.logger;
 
@@ -1149,8 +1143,8 @@ var Feeds = function () {
 
     this.authData = authData;
     this.authEndpoint = authEndpoint;
-    if (!serviceId || !serviceId.match(serviceIdRegex)) {
-      throw new TypeError("Invalid serviceId: " + serviceId);
+    if (!instance || !instance.match(instanceRegex)) {
+      throw new TypeError("Invalid instance: " + instance);
     }
     this.listTokenProvider = new TokenProvider({
       authEndpoint: this.authEndpoint,
@@ -1169,7 +1163,7 @@ var Feeds = function () {
     if (!logger && logLevel) {
       logger = new PusherPlatform.ConsoleLogger(logLevel);
     }
-    this.app = new PusherPlatform.App({ serviceId: serviceId, cluster: cluster, logger: logger });
+    this.app = new PusherPlatform.App({ instance: instance, logger: logger, host: host });
   }
 
   createClass(Feeds, [{
@@ -1181,7 +1175,7 @@ var Feeds = function () {
 
       return parseResponse(this.app.request({
         method: "GET",
-        path: servicePath + "/feeds" + queryString({ prefix: prefix, limit: limit }),
+        path: "feeds" + queryString({ prefix: prefix, limit: limit }),
         tokenProvider: this.listTokenProvider
       }));
     }
@@ -1226,7 +1220,7 @@ var Feeds = function () {
       };
       return this.app.subscribe(_extends({}, options, {
         onEvent: onEvent,
-        path: servicePath + "/firehose/items",
+        path: "firehose/items",
         tokenProvider: this.firehoseTokenProvider
       }));
     }
