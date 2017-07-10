@@ -1,4 +1,4 @@
-import PusherPlatform from "pusher-platform-js";
+import PusherPlatform from "pusher-platform";
 import Feed from "./feed";
 import TokenProvider from "./token-provider";
 import { feedIdRegex, instanceRegex } from "./constants";
@@ -37,11 +37,17 @@ export default class Feeds {
     if (!logger && logLevel) {
       logger = new PusherPlatform.ConsoleLogger(logLevel);
     }
-    this.app = new PusherPlatform.App({ instance, logger, host });
+    this.instance = new PusherPlatform.Instance({
+      host,
+      instance,
+      logger,
+      serviceName: "feeds",
+      serviceVersion: "v1",
+    });
   }
 
   list({ prefix, limit } = {}) {
-    return parseResponse(this.app.request({
+    return parseResponse(this.instance.request({
       method: "GET",
       path: "feeds" + queryString({ prefix, limit }),
       tokenProvider: this.listTokenProvider,
@@ -61,7 +67,7 @@ export default class Feeds {
       }
     }) : null;
     return new Feed({
-      app: this.app,
+      instance: this.instance,
       feedId,
       readTokenProvider,
     });
@@ -78,7 +84,7 @@ export default class Feeds {
         onUnsubscribe(event);
       }
     };
-    return this.app.subscribe({
+    return this.instance.subscribe({
       ...options,
       onEvent,
       path: "firehose/items",

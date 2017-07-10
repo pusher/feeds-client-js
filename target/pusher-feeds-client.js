@@ -163,6 +163,7 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
                     __extends(NetworkError, _super);
                     function NetworkError(error) {
                         var _this = _super.call(this, error) || this;
+                        //TODO: ugly hack to make the instanceof calls work. We might have to find a better solution.
                         Object.setPrototypeOf(_this, NetworkError.prototype);
                         _this.error = error;
                         return _this;
@@ -182,8 +183,8 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
                 var BaseClient = function () {
                     function BaseClient(options) {
                         this.options = options;
-                        var cluster = options.cluster.replace(/\/$/, '');
-                        this.baseURL = (options.encrypted !== false ? "https" : "http") + "://" + cluster;
+                        var host = options.host.replace(/\/$/, '');
+                        this.baseURL = (options.encrypted !== false ? "https" : "http") + "://" + host;
                         this.XMLHttpRequest = options.XMLHttpRequest || window.XMLHttpRequest;
                     }
                     BaseClient.prototype.request = function (options) {
@@ -693,8 +694,8 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
                 var base_client_1 = __webpack_require__(0);
                 var logger_1 = __webpack_require__(1);
                 var Retry = function () {
-                    function Retry(waitTimeMilis) {
-                        this.waitTimeMilis = waitTimeMilis;
+                    function Retry(waitTimeMillis) {
+                        this.waitTimeMillis = waitTimeMillis;
                     }
                     return Retry;
                 }();
@@ -710,15 +711,15 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
                     function ExponentialBackoffRetryStrategy(options) {
                         this.limit = 6;
                         this.retryCount = 0;
-                        this.maxBackoffMilis = 30000;
-                        this.defaultBackoffMilis = 1000;
-                        this.currentBackoffMilis = this.defaultBackoffMilis;
+                        this.maxBackoffMillis = 30000;
+                        this.defaultBackoffMillis = 1000;
+                        this.currentBackoffMillis = this.defaultBackoffMillis;
                         if (options.limit) this.limit = options.limit;
-                        if (options.initialBackoffMilis) {
-                            this.currentBackoffMilis = options.initialBackoffMilis;
-                            this.defaultBackoffMilis = options.defaultBackoffMilis;
+                        if (options.initialBackoffMillis) {
+                            this.currentBackoffMillis = options.initialBackoffMillis;
+                            this.defaultBackoffMillis = options.defaultBackoffMillis;
                         }
-                        if (options.maxBackoffMilis) this.maxBackoffMilis = options.maxBackoffMilis;
+                        if (options.maxBackoffMillis) this.maxBackoffMillis = options.maxBackoffMillis;
                         if (options.logger !== undefined) {
                             this.logger = options.logger;
                         } else {
@@ -737,10 +738,10 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
                                 this.retryCount += 1;
                                 return new Retry(retryable.backoffMillis);
                             } else {
-                                this.currentBackoffMilis = this.calulateMilisToRetry();
+                                this.currentBackoffMillis = this.calulateMillisToRetry();
                                 this.retryCount += 1;
-                                this.logger.verbose(this.constructor.name + ": Will attempt to retry in: " + this.currentBackoffMilis);
-                                return new Retry(this.currentBackoffMilis);
+                                this.logger.verbose(this.constructor.name + ": Will attempt to retry in: " + this.currentBackoffMillis);
+                                return new Retry(this.currentBackoffMillis);
                             }
                         } else {
                             this.logger.verbose(this.constructor.name + ": Error is not retryable", error);
@@ -754,7 +755,7 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
                             if (shouldRetry instanceof DoNotRetry) {
                                 reject(error);
                             } else if (shouldRetry instanceof Retry) {
-                                window.setTimeout(resolve, shouldRetry.waitTimeMilis);
+                                window.setTimeout(resolve, shouldRetry.waitTimeMillis);
                             }
                         });
                     };
@@ -774,16 +775,16 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
                     };
                     ExponentialBackoffRetryStrategy.prototype.reset = function () {
                         this.retryCount = 0;
-                        this.currentBackoffMilis = this.defaultBackoffMilis;
+                        this.currentBackoffMillis = this.defaultBackoffMillis;
                     };
-                    ExponentialBackoffRetryStrategy.prototype.calulateMilisToRetry = function () {
-                        if (this.currentBackoffMilis >= this.maxBackoffMilis || this.currentBackoffMilis * 2 >= this.maxBackoffMilis) {
-                            return this.maxBackoffMilis;
+                    ExponentialBackoffRetryStrategy.prototype.calulateMillisToRetry = function () {
+                        if (this.currentBackoffMillis >= this.maxBackoffMillis || this.currentBackoffMillis * 2 >= this.maxBackoffMillis) {
+                            return this.maxBackoffMillis;
                         }
                         if (this.retryCount > 0) {
-                            return this.currentBackoffMilis * 2;
+                            return this.currentBackoffMillis * 2;
                         }
-                        return this.currentBackoffMilis;
+                        return this.currentBackoffMillis;
                     };
                     return ExponentialBackoffRetryStrategy;
                 }();
@@ -806,17 +807,28 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
                 Object.defineProperty(exports, "__esModule", { value: true });
                 var base_client_1 = __webpack_require__(0);
                 var logger_1 = __webpack_require__(1);
-                var DEFAULT_CLUSTER = "api-ceres.pusherplatform.io";
-                var App = function () {
-                    function App(options) {
-                        if (!options.serviceId) {
-                            throw new Error('Expected `serviceId` property in App options');
-                        }
-                        this.serviceId = options.serviceId;
+                var HOST_BASE = "pusherplatform.io";
+                var Instance = function () {
+                    function Instance(options) {
+                        if (!options.instance) throw new Error('Expected `instance` property in Instance options!');
+                        if (options.instance.split(":").length !== 3) throw new Error('The instance property is in the wrong format!');
+                        if (!options.serviceName) throw new Error('Expected `serviceName` property in Instance options!');
+                        if (!options.serviceVersion) throw new Error('Expected `serviceVersion` property in Instance otpions!');
+                        var splitInstance = options.instance.split(":");
+                        this.platformVersion = splitInstance[0];
+                        this.cluster = splitInstance[1];
+                        this.instanceId = splitInstance[2];
+                        this.serviceName = options.serviceName;
+                        this.serviceVersion = options.serviceVersion;
                         this.tokenProvider = options.tokenProvider;
+                        if (options.host) {
+                            this.host = options.host;
+                        } else {
+                            this.host = this.cluster + "." + HOST_BASE;
+                        }
                         this.client = options.client || new base_client_1.BaseClient({
-                            cluster: options.cluster ? sanitizeCluster(options.cluster) : DEFAULT_CLUSTER,
-                            encrypted: options.encrypted
+                            encrypted: options.encrypted,
+                            host: this.host
                         });
                         if (options.logger !== undefined) {
                             this.logger = options.logger;
@@ -824,7 +836,7 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
                             this.logger = new logger_1.ConsoleLogger();
                         }
                     }
-                    App.prototype.request = function (options) {
+                    Instance.prototype.request = function (options) {
                         var _this = this;
                         options.path = this.absPath(options.path);
                         var tokenProvider = options.tokenProvider || this.tokenProvider;
@@ -836,7 +848,7 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
                             return this.client.request(options);
                         }
                     };
-                    App.prototype.subscribe = function (options) {
+                    Instance.prototype.subscribe = function (options) {
                         options.path = this.absPath(options.path);
                         options.logger = this.logger;
                         var subscription = this.client.newSubscription(options);
@@ -854,7 +866,7 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
                         }
                         return subscription;
                     };
-                    App.prototype.resumableSubscribe = function (options) {
+                    Instance.prototype.resumableSubscribe = function (options) {
                         if (!options.logger) options.logger = this.logger;
                         options.logger = this.logger;
                         options.path = this.absPath(options.path);
@@ -863,16 +875,12 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
                         resumableSubscription.open();
                         return resumableSubscription;
                     };
-                    App.prototype.absPath = function (relativePath) {
-                        return ("/apps/" + this.serviceId + "/" + relativePath).replace(/\/+/g, "/").replace(/\/+$/, "");
+                    Instance.prototype.absPath = function (relativePath) {
+                        return ("/services/" + this.serviceName + "/" + this.serviceVersion + "/" + this.instanceId + "/" + relativePath).replace(/\/+/g, "/").replace(/\/+$/, "");
                     };
-                    return App;
+                    return Instance;
                 }();
-                exports.default = App;
-                function sanitizeCluster(cluster) {
-                    return cluster.replace(/^[^\/:]*:\/\//, "") // remove schema
-                    .replace(/\/$/, ""); // remove trailing slash
-                }
+                exports.default = Instance;
 
                 /***/
             },
@@ -882,8 +890,8 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
                 "use strict";
 
                 Object.defineProperty(exports, "__esModule", { value: true });
-                var app_1 = __webpack_require__(5);
-                exports.App = app_1.default;
+                var instance_1 = __webpack_require__(5);
+                exports.Instance = instance_1.default;
                 var base_client_1 = __webpack_require__(0);
                 exports.BaseClient = base_client_1.BaseClient;
                 var logger_1 = __webpack_require__(1);
@@ -896,7 +904,7 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
                 var subscription_1 = __webpack_require__(2);
                 exports.Subscription = subscription_1.Subscription;
                 exports.default = {
-                    App: app_1.default,
+                    Instance: instance_1.default,
                     BaseClient: base_client_1.BaseClient,
                     ResumableSubscription: resumable_subscription_1.ResumableSubscription, Subscription: subscription_1.Subscription,
                     ExponentialBackoffRetryStrategy: retry_strategy_1.ExponentialBackoffRetryStrategy,
@@ -1011,12 +1019,12 @@ var objectWithoutProperties = function (obj, keys) {
 
 var Feed = function () {
   function Feed(_ref) {
-    var app = _ref.app,
+    var instance = _ref.instance,
         feedId = _ref.feedId,
         readTokenProvider = _ref.readTokenProvider;
     classCallCheck(this, Feed);
 
-    this.app = app;
+    this.instance = instance;
     this.feedId = feedId;
     this.readTokenProvider = readTokenProvider;
   }
@@ -1029,7 +1037,7 @@ var Feed = function () {
       if (typeof options.onItem !== "function") {
         throw new TypeError("Must provide an `onItem` callback");
       }
-      return this.app.resumableSubscribe(_extends({}, options, {
+      return this.instance.resumableSubscribe(_extends({}, options, {
         path: "feeds/" + this.feedId + "/items" + queryString({
           // TODO change query parameter at the API level
           tail_size: options.previousItems
@@ -1046,7 +1054,7 @@ var Feed = function () {
           _ref2$limit = _ref2.limit,
           limit = _ref2$limit === undefined ? 50 : _ref2$limit;
 
-      return parseResponse(this.app.request({
+      return parseResponse(this.instance.request({
         method: "GET",
         path: "feeds/" + this.feedId + "/items" + queryString({
           from_id: fromId,
@@ -1163,7 +1171,13 @@ var Feeds = function () {
     if (!logger && logLevel) {
       logger = new PusherPlatform.ConsoleLogger(logLevel);
     }
-    this.app = new PusherPlatform.App({ instance: instance, logger: logger, host: host });
+    this.instance = new PusherPlatform.Instance({
+      host: host,
+      instance: instance,
+      logger: logger,
+      serviceName: "feeds",
+      serviceVersion: "v1"
+    });
   }
 
   createClass(Feeds, [{
@@ -1173,7 +1187,7 @@ var Feeds = function () {
           prefix = _ref2.prefix,
           limit = _ref2.limit;
 
-      return parseResponse(this.app.request({
+      return parseResponse(this.instance.request({
         method: "GET",
         path: "feeds" + queryString({ prefix: prefix, limit: limit }),
         tokenProvider: this.listTokenProvider
@@ -1193,7 +1207,7 @@ var Feeds = function () {
         })
       }) : null;
       return new Feed({
-        app: this.app,
+        instance: this.instance,
         feedId: feedId,
         readTokenProvider: readTokenProvider
       });
@@ -1218,7 +1232,7 @@ var Feeds = function () {
           onUnsubscribe(event);
         }
       };
-      return this.app.subscribe(_extends({}, options, {
+      return this.instance.subscribe(_extends({}, options, {
         onEvent: onEvent,
         path: "firehose/items",
         tokenProvider: this.firehoseTokenProvider
