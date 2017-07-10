@@ -81,7 +81,7 @@ queries can then be made. Takes a `feedId`.
 
 Subscribe to receive new items published to `feed`. A subscription can be
 resumed from some previously seen item by providing a `lastEventId`, or can be
-initiated with some initial state by providing a `tailSize`. [Private
+initiated with some initial state by providing a `previousItems`. [Private
 feeds](https://pusher-mimir.herokuapp.com/feeds/private-feeds/) require `READ`
 permission. Takes a single options object with the following properties.
 
@@ -90,8 +90,8 @@ permission. Takes a single options object with the following properties.
 - `lastEventId`: [optional] retrieve every item published after `lastEventId`,
   and then live items as they are published
 
-- `tailSize`: [optional] if this parameter is provided, then the most recent
-  `tailSize` items will be retrieved, followed by live items as they are
+- `previousItems`: [optional] if this parameter is provided, then the most recent
+  `previousItems` items will be retrieved, followed by live items as they are
   published (`lastEventId` takes precedence if both are provided)
 
 - `onOpen`: [optional] callback to fire when the subscription is open
