@@ -1038,7 +1038,8 @@ var Feed = function () {
       }
       return this.app.resumableSubscribe(_extends({}, options, {
         path: this.itemsPath + queryString({
-          tail_size: options.tailSize
+          // TODO change query parameter at the API level
+          tail_size: options.previousItems
         }),
         tokenProvider: this.readTokenProvider,
         onEvent: options.onItem
