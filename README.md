@@ -1,6 +1,6 @@
 # Client JavaScript reference
 
-The JavaScript client for Pusher Feeds. Find it [on Github here](https://github.com/pusher/feeds-client-js).
+The JavaScript client for Pusher Feeds. If you aren't already here, you can find the source [on Github](https://github.com/pusher/feeds-client-js).
 
 ## Installation
 
@@ -18,14 +18,13 @@ In a script tag:
 
 ## Instantiate a Feeds object
 
-Constructor `Feeds` takes a single options object with the following
+The constructor `Feeds` takes a single options object with the following
 properties.
 
 - `serviceId`: [required] your service ID; get this from [your
   dashboard](https://dash.pusher.com)
 
-- `cluster`: [optional] the cluster that your service lives on, defaults to
-  `api-ceres.pusherplatform.io`
+- `cluster`: [optional] the cluster that your service lives on
 
 - `authEndpiont`: [optional] the endpoint to use to request tokens for access
   to [private feeds](https://pusher-mimir.herokuapp.com/feeds/private-feeds/)
@@ -74,7 +73,7 @@ receive new items published to `yourFeed`. A subscription can be resumed from
 some previously seen item by providing a `lastEventId`, or can be initiated
 with a fixed number of previously seen items by providing the `previousItems`
 option.  [Private
-feeds](https://pusher-mimir.herokuapp.com/feeds/private-feeds/) require `READ`
+feeds](https://pusher-mimir.herokuapp.com/feeds/private-feeds/) require `"READ"`
 permission. Takes a single options object with the following properties.
 
 - `onItem`: [required] callback to handle items, takes each item as a parameter
@@ -129,7 +128,7 @@ setTimeout(subscription.unsubscribe, 5000);
 
 Given a feed object such as `yourFeed` above, use `yourFeed.getHistory` to
 query a feed for historical items. [Private
-feeds](https://pusher-mimir.herokuapp.com/feeds/private-feeds/) require `READ`
+feeds](https://pusher-mimir.herokuapp.com/feeds/private-feeds/) require `"READ"`
 permission. Takes a single (optional) options object with the following
 properties.
 
@@ -168,7 +167,7 @@ yourFeed.getHistory({ limit: 25 }).then(({ items }) => {
 ## List feeds for an instance
 
 Given a feeds object `feeds`, `feeds.list` lists non-empty feeds. This method
-requires `READ` permission on the path `"feeds"`, see the [auth
+requires `"READ"` permission on the path `"feeds"`, see the [auth
 docs](https://pusher-mimir.herokuapp.com/feeds/private-feeds/).
 Takes a single options object with the following properties.
 
@@ -176,24 +175,11 @@ Takes a single options object with the following properties.
 
 - `limit`: [optional] return at most this many matches
 
-### Example
-
-```js
-feeds.list({
-  prefix: "admin-",
-  limit: 20
-}).then(feeds => {
-  // Update the DOM with the feeds
-}).catch(error => {
-  console.error(`Failed to fetch feeds: ${error}`)
-});
-```
-
 ## Subscribe to the Firehose
 
 Given a feeds object `feeds`, `feeds.firehose` subscribes to the firehose for
 this instance to see all events and subscriptions on a single subscription.
-This method requires `READ` permission on the path `"firehose/items"` – see
+This method requires `"READ"` permission on the path `"firehose/items"` – see
 [auth docs](https://pusher-mimir.herokuapp.com/feeds/private-feeds/).  Takes a
 single options object with the following properties
 
