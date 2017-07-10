@@ -148,6 +148,7 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
                     __extends(ErrorResponse, _super);
                     function ErrorResponse(statusCode, headers, info) {
                         var _this = _super.call(this, "ErroResponse: " + statusCode + ": " + info + " \n Headers: " + JSON.stringify(headers)) || this;
+                        Object.setPrototypeOf(_this, ErrorResponse.prototype);
                         _this.statusCode = statusCode;
                         _this.headers = headers;
                         _this.info = info;
@@ -766,7 +767,7 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
                         //We allow network errors
                         if (error instanceof base_client_1.NetworkError) retryable.isRetryable = true;else if (error instanceof base_client_1.ErrorResponse) {
                             //Only retry after is allowed
-                            if (error.headers["retry-after"]) {
+                            if (error.headers["Retry-After"]) {
                                 retryable.isRetryable = true;
                                 retryable.backoffMillis = parseInt(error.headers["retry-after"]) * 1000;
                             }
