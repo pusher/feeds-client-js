@@ -1,6 +1,11 @@
 # Client JavaScript reference
 
-The JavaScript client for Pusher Feeds. If you aren't already here, you can find the source [on Github](https://github.com/pusher/feeds-client-js).
+The JavaScript client for Pusher Feeds. If you aren't already here, you can
+find the source [on Github](https://github.com/pusher/feeds-client-js).
+
+For more information on the Feeds service, [see
+here](https://pusher.com/feeds). For full documentation, [see
+here](https://pusher-mimir.herokuapp.com/feeds)
 
 ## Installation
 
@@ -36,7 +41,8 @@ properties.
   `DEBUG`, `INFO`, `WARNING`, and `ERROR` respectively. 1 logs everything, 5
   only logs errors etc.
 
-- `logger`: [optional] a cutom logger implementation, must conform to the following interface
+- `logger`: [optional] a cutom logger implementation, must conform to the
+  following interface
 
 ```ts
 interface Logger {
