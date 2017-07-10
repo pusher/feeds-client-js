@@ -14,8 +14,7 @@ export default class Feed {
     return this.instance.resumableSubscribe({
       ...options,
       path: `feeds/${ this.feedId }/items` + queryString({
-        // TODO change query parameter at the API level
-        tail_size: options.previousItems,
+        previous_items: options.previousItems,
       }),
       tokenProvider: this.readTokenProvider,
       onEvent: options.onItem,
