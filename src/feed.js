@@ -1,9 +1,8 @@
-import { servicePath } from "./constants";
 import { parseResponse, queryString } from "./utils";
 
 export default class Feed {
-  constructor({ app, feedId, readTokenProvider }) {
-    this.app = app;
+  constructor({ instance, feedId, readTokenProvider }) {
+    this.instance = instance;
     this.feedId = feedId;
     this.readTokenProvider = readTokenProvider;
   }
@@ -12,9 +11,9 @@ export default class Feed {
     if (typeof options.onItem !== "function") {
       throw new TypeError("Must provide an `onItem` callback");
     }
-    return this.app.resumableSubscribe({
+    return this.instance.resumableSubscribe({
       ...options,
-      path: this.itemsPath + queryString({
+      path: `feeds/${ this.feedId }/items` + queryString({
         previous_items: options.previousItems,
       }),
       tokenProvider: this.readTokenProvider,
@@ -23,17 +22,13 @@ export default class Feed {
   }
 
   getHistory({ fromId, limit = 50 } = {}) {
-    return parseResponse(this.app.request({
+    return parseResponse(this.instance.request({
       method: "GET",
-      path: this.itemsPath + queryString({
+      path: `feeds/${ this.feedId }/items` + queryString({
         from_id: fromId,
         limit: limit,
       }),
       tokenProvider: this.readTokenProvider,
     }));
-  }
-
-  get itemsPath() {
-    return `${ servicePath }/feeds/${ this.feedId }/items`;
   }
 }

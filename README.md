@@ -23,7 +23,7 @@ The default export is a `Feeds` class.
 Instantiate an instance of Feeds:
 
 ```js
-const feeds = new Feeds({ serviceId: your_service_id });
+const feeds = new Feeds({ instance: your_instance_string });
 ```
 
 Create a feed object:
@@ -44,11 +44,8 @@ yourFeed.subscribe({ onItem: console.log });
 
 Takes a single options object with the following properties.
 
-- `serviceId`: [required] your service ID; get this from [your
+- `instance`: [required] your instance string; get this from [your
   dashboard](https://dash.pusher.com)
-
-- `cluster`: [optional] the cluster that your service lives on, defaults to
-  `api-ceres.pusherplatform.io`
 
 - `authEndpiont`: [optional] the endpoint to use to request tokens for access
   to [private feeds](https://pusher-mimir.herokuapp.com/feeds/private-feeds/)
