@@ -1,22 +1,22 @@
-import PusherPlatform from "pusher-platform-js";
+import PusherPlatform from "pusher-platform";
 import Feed from "./feed";
 import TokenProvider from "./token-provider";
-import { servicePath, feedIdRegex, serviceIdRegex } from "./constants";
+import { feedIdRegex, instanceRegex } from "./constants";
 import { parseResponse, queryString } from "./utils";
 
 export default class Feeds {
   constructor({
-    serviceId,
-    cluster,
     authData = {},
     authEndpoint,
+    host,
+    instance,
     logLevel,
     logger,
   } = {}) {
     this.authData = authData;
     this.authEndpoint = authEndpoint;
-    if (!serviceId || !serviceId.match(serviceIdRegex)) {
-      throw new TypeError(`Invalid serviceId: ${ serviceId }`);
+    if (!instance || !instance.match(instanceRegex)) {
+      throw new TypeError(`Invalid instance: ${ instance }`);
     }
     this.listTokenProvider = new TokenProvider({
       authEndpoint: this.authEndpoint,
@@ -37,13 +37,19 @@ export default class Feeds {
     if (!logger && logLevel) {
       logger = new PusherPlatform.ConsoleLogger(logLevel);
     }
-    this.app = new PusherPlatform.App({ serviceId, cluster, logger });
+    this.instance = new PusherPlatform.Instance({
+      host,
+      instance,
+      logger,
+      serviceName: "feeds",
+      serviceVersion: "v1",
+    });
   }
 
   list({ prefix, limit } = {}) {
-    return parseResponse(this.app.request({
+    return parseResponse(this.instance.request({
       method: "GET",
-      path: `${ servicePath }/feeds` + queryString({ prefix, limit }),
+      path: "feeds" + queryString({ prefix, limit }),
       tokenProvider: this.listTokenProvider,
     }));
   }
@@ -61,7 +67,7 @@ export default class Feeds {
       }
     }) : null;
     return new Feed({
-      app: this.app,
+      instance: this.instance,
       feedId,
       readTokenProvider,
     });
@@ -78,10 +84,10 @@ export default class Feeds {
         onUnsubscribe(event);
       }
     };
-    return this.app.subscribe({
+    return this.instance.subscribe({
       ...options,
       onEvent,
-      path: `${ servicePath }/firehose/items`,
+      path: "firehose/items",
       tokenProvider: this.firehoseTokenProvider,
     });
   }

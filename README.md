@@ -26,10 +26,8 @@ In a script tag:
 The constructor `Feeds` takes a single options object with the following
 properties.
 
-- `serviceId`: [required] your service ID; get this from [your
+- `instance`: [required] your instance string; get this from [your
   dashboard](https://dash.pusher.com)
-
-- `cluster`: [optional] the cluster that your service lives on
 
 - `authEndpiont`: [optional] the endpoint to use to request tokens for access
   to [private feeds](https://pusher-mimir.herokuapp.com/feeds/private-feeds/)
