@@ -5,7 +5,7 @@ find the source [on Github](https://github.com/pusher/feeds-client-js).
 
 For more information on the Feeds service, [see
 here](https://pusher.com/feeds). For full documentation, [see
-here](https://pusher-mimir.herokuapp.com/feeds)
+here](https://docs.pusher.com/feeds)
 
 ## Installation
 
@@ -30,7 +30,7 @@ properties.
   dashboard](https://dash.pusher.com)
 
 - `authEndpiont`: [optional] the endpoint to use to request tokens for access
-  to [private feeds](https://pusher-mimir.herokuapp.com/feeds/private-feeds/)
+  to [private feeds](https://docs.pusher.com/feeds/private-feeds/)
 
 - `authData`: [optional] data to pass to the auth endpoint along with token
   requests
@@ -77,7 +77,7 @@ receive new items published to `yourFeed`. A subscription can be resumed from
 some previously seen item by providing a `lastEventId`, or can be initiated
 with a fixed number of previously seen items by providing the `previousItems`
 option.  [Private
-feeds](https://pusher-mimir.herokuapp.com/feeds/private-feeds/) require `"READ"`
+feeds](https://docs.pusher.com/feeds/private-feeds/) require `"READ"`
 permission. Takes a single options object with the following properties.
 
 - `onItem`: [required] callback to handle items, takes each item as a parameter
@@ -132,7 +132,7 @@ setTimeout(subscription.unsubscribe, 5000);
 
 Given a feed object such as `yourFeed` above, use `yourFeed.getHistory` to
 query a feed for historical items. [Private
-feeds](https://pusher-mimir.herokuapp.com/feeds/private-feeds/) require `"READ"`
+feeds](https://docs.pusher.com/feeds/private-feeds/) require `"READ"`
 permission. Takes a single (optional) options object with the following
 properties.
 
@@ -172,7 +172,7 @@ yourFeed.getHistory({ limit: 25 }).then(({ items }) => {
 
 Given a feeds object `feeds`, `feeds.list` lists non-empty feeds. This method
 requires `"READ"` permission on the path `"feeds"`, see the [auth
-docs](https://pusher-mimir.herokuapp.com/feeds/private-feeds/).
+docs](https://docs.pusher.com/feeds/private-feeds/).
 Takes a single options object with the following properties.
 
 - `prefix`: [optional] only return those feeds that start with this string
@@ -184,7 +184,7 @@ Takes a single options object with the following properties.
 Given a feeds object `feeds`, `feeds.firehose` subscribes to the firehose for
 this instance to see all events and subscriptions on a single subscription.
 This method requires `"READ"` permission on the path `"firehose/items"` – see
-[auth docs](https://pusher-mimir.herokuapp.com/feeds/private-feeds/).  Takes a
+[auth docs](https://docs.pusher.com/feeds/private-feeds/).  Takes a
 single options object with the following properties
 
 - `onPublish`: callback to fire when a Publish event is received
