@@ -26,7 +26,7 @@ export default class Feed {
       method: "GET",
       path: `feeds/${ this.feedId }/items` + queryString({
         from_id: fromId,
-        limit: limit,
+        limit,
       }),
       tokenProvider: this.readTokenProvider,
     }));
