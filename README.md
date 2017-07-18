@@ -1,4 +1,4 @@
-# Client JavaScript reference
+# Feeds Client JavaScript reference
 
 The JavaScript client for Pusher Feeds. If you aren't already here, you can
 find the source [on Github](https://github.com/pusher/feeds-client-js).
