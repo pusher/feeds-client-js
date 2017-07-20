@@ -4,13 +4,24 @@
     <script type="text/javascript" src="../target/pusher-feeds-client.js"></script>
     <script type="text/javascript">
       const feeds = new Feeds({
-        instance: "v1:api-ceres:4ff02853-helo-4590-81c7-42c09f25d113",
+        instanceId: "YOUR_INSTANCE_STRING",
       });
-      feeds.feed("zans-feed").subscribe({
-        onItem: item => console.log(item),
-        onOpen: () => console.log("opened"),
-        onError: error => console.error(error),
-        previousItems: 10,
+
+      const playground = feeds.feed("playground");
+
+      playground.subscribe({
+        previousItems: 5,
+        onOpen: () => {
+          console.log("Feeds: Connection established");
+        },
+        onItem: item => {
+          console.log("Feeds new item:", item.body.data);
+          document.body.innerHTML +=
+            `<p>${JSON.stringify(item.body.data)}</p>`;
+        },
+        onError: error => {
+          console.error("Error:", error);
+        },
       });
     </script>
   </body>

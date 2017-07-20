@@ -26,7 +26,7 @@ In a script tag:
 The constructor `Feeds` takes a single options object with the following
 properties.
 
-- `instance`: [required] your instance string; get this from [your
+- `instanceId`: [required] get this from [your
   dashboard](https://dash.pusher.com)
 
 - `authEndpiont`: [optional] the endpoint to use to request tokens for access

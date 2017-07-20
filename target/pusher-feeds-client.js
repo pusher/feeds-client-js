@@ -1070,7 +1070,7 @@ var Feed = function () {
 var cacheExpiryTolerance = 10 * 60; // 10 minutes (in seconds)
 var defaultAuthEndpoint = "/feeds/tokens";
 var feedIdRegex = /^[a-zA-Z0-9-]+$/;
-var instanceRegex = /^v([1-9][0-9]*):([a-zA-Z0-9-]+):([a-zA-Z0-9-]+)$/;
+var instanceIdRegex = /^v([1-9][0-9]*):([a-zA-Z0-9-]+):([a-zA-Z0-9-]+)$/;
 var tokenProviderTimeout = 30 * 1000; // 30 seconds (in ms)
 
 var TokenProvider = function () {
@@ -1143,7 +1143,7 @@ var Feeds = function () {
         authData = _ref$authData === undefined ? {} : _ref$authData,
         authEndpoint = _ref.authEndpoint,
         host = _ref.host,
-        instance = _ref.instance,
+        instanceId = _ref.instanceId,
         logLevel = _ref.logLevel,
         logger = _ref.logger;
 
@@ -1151,8 +1151,8 @@ var Feeds = function () {
 
     this.authData = authData;
     this.authEndpoint = authEndpoint;
-    if (!instance || !instance.match(instanceRegex)) {
-      throw new TypeError("Invalid instance: " + instance);
+    if (!instanceId || !instanceId.match(instanceIdRegex)) {
+      throw new TypeError("Invalid instanceId: " + instanceId);
     }
     this.listTokenProvider = new TokenProvider({
       authEndpoint: this.authEndpoint,
@@ -1173,7 +1173,7 @@ var Feeds = function () {
     }
     this.instance = new PusherPlatform.Instance({
       host: host,
-      instance: instance,
+      instance: instanceId,
       logger: logger,
       serviceName: "feeds",
       serviceVersion: "v1"
