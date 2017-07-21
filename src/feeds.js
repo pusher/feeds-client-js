@@ -39,7 +39,7 @@ export default class Feeds {
     }
     this.instance = new PusherPlatform.Instance({
       host,
-      instance: instanceId,
+      instanceId,
       logger,
       serviceName: "feeds",
       serviceVersion: "v1",

@@ -811,14 +811,14 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
                 var HOST_BASE = "pusherplatform.io";
                 var Instance = function () {
                     function Instance(options) {
-                        if (!options.instance) throw new Error('Expected `instance` property in Instance options!');
-                        if (options.instance.split(":").length !== 3) throw new Error('The instance property is in the wrong format!');
+                        if (!options.instanceId) throw new Error('Expected `instanceId` property in Instance options!');
+                        if (options.instanceId.split(":").length !== 3) throw new Error('The instance property is in the wrong format!');
                         if (!options.serviceName) throw new Error('Expected `serviceName` property in Instance options!');
                         if (!options.serviceVersion) throw new Error('Expected `serviceVersion` property in Instance otpions!');
-                        var splitInstance = options.instance.split(":");
+                        var splitInstance = options.instanceId.split(":");
                         this.platformVersion = splitInstance[0];
                         this.cluster = splitInstance[1];
-                        this.instanceId = splitInstance[2];
+                        this.id = splitInstance[2];
                         this.serviceName = options.serviceName;
                         this.serviceVersion = options.serviceVersion;
                         this.tokenProvider = options.tokenProvider;
@@ -877,7 +877,7 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
                         return resumableSubscription;
                     };
                     Instance.prototype.absPath = function (relativePath) {
-                        return ("/services/" + this.serviceName + "/" + this.serviceVersion + "/" + this.instanceId + "/" + relativePath).replace(/\/+/g, "/").replace(/\/+$/, "");
+                        return ("/services/" + this.serviceName + "/" + this.serviceVersion + "/" + this.id + "/" + relativePath).replace(/\/+/g, "/").replace(/\/+$/, "");
                     };
                     return Instance;
                 }();
@@ -1173,7 +1173,7 @@ var Feeds = function () {
     }
     this.instance = new PusherPlatform.Instance({
       host: host,
-      instance: instanceId,
+      instanceId: instanceId,
       logger: logger,
       serviceName: "feeds",
       serviceVersion: "v1"
