@@ -17,7 +17,7 @@ export default class Feed {
         previous_items: options.previousItems,
       }),
       tokenProvider: this.readTokenProvider,
-      onEvent: options.onItem,
+      onEvent: ({body, eventId}) => options.onItem({ id: eventId, ...body })
     });
   }
 
