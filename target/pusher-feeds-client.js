@@ -1047,17 +1047,17 @@ var Feed = function () {
       }));
     }
   }, {
-    key: "getHistory",
-    value: function getHistory() {
+    key: "paginate",
+    value: function paginate() {
       var _ref2 = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
-          fromId = _ref2.fromId,
+          cursor = _ref2.cursor,
           _ref2$limit = _ref2.limit,
           limit = _ref2$limit === undefined ? 50 : _ref2$limit;
 
       return parseResponse(this.instance.request({
         method: "GET",
         path: "feeds/" + this.feedId + "/items" + queryString({
-          from_id: fromId,
+          cursor: cursor,
           limit: limit
         }),
         tokenProvider: this.readTokenProvider
