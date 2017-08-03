@@ -128,17 +128,17 @@ const subscription = feed.subscribe({
 setTimeout(subscription.unsubscribe, 5000);
 ```
 
-## Querying history
+## Pagination
 
-Given a feed object such as `yourFeed` above, use `yourFeed.getHistory` to
-query a feed for historical items. [Private
+Given a feed object such as `yourFeed` above, use `yourFeed.paginate` to query a
+feed for pages of previously published items. Items are returned in descending
+order of item ID. [Private
 feeds](http://docs.pusher.com/feeds/concepts/private-feeds) require `"READ"`
 permission. Takes a single (optional) options object with the following
 properties.
 
-- `fromId`: [optional] look back in the past from this ID; retrieves items
-  _older_ than this ID – if not provided, retrieves the most recently published
-  items
+- `cursor`: [optional] the ID of the first item in the page – if not provided,
+  retrieves the most recently published items
 
 - `limit`: [optional] limit the number of items to retrieve
 
@@ -155,15 +155,19 @@ the following format.
       data: item_data
     }
     ...
-  ]
+  ],
+  next_cursor: next_cursor
 }
 ```
+
+`next_cursor` should be used as the `cursor` parameter to get the next page of
+results. It will be `null` if there are no more results.
 
 ### Example
 
 ```js
-// Get the last 25 items (but don’t subscribe)
-yourFeed.getHistory({ limit: 25 }).then(({ items }) => {
+// Get a page containing the last 25 items (but don’t subscribe)
+yourFeed.paginate({ limit: 25 }).then(({ items }) => {
   // Update the DOM with the items
 });
 ```
