@@ -1039,6 +1039,8 @@ var Feed = function () {
         throw new TypeError("Must provide an `onItem` callback");
       }
       return this.instance.resumableSubscribe(_extends({}, options, {
+        // Mapping our itemId to platform library eventId
+        lastEventId: options.lastItemId,
         path: "feeds/" + this.feedId + "/items" + queryString({
           previous_items: options.previousItems
         }),
