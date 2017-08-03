@@ -102,12 +102,9 @@ Items are passed to the `onItem` callback with the following format
 
 ```js
 {
-  eventId: event_id, // this corresponds to the published item_id
-  headers: headers, // ignore this for now!
-  body: {
-    created: timestamp,
-    data: item_data
-  }
+  id: item_id, // this corresponds to the published item_id
+  created: timestamp,
+  data: item_data
 }
 ```
 
@@ -116,7 +113,7 @@ Items are passed to the `onItem` callback with the following format
 ```js
 const subscription = feed.subscribe({
   previousItems: 10,
-  onItem: ({ body: { created, data } }) => {
+  onItem: ({ created, data }) => {
     // Update the DOM with the item data
   },
   onError: error => {

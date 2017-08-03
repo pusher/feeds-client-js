@@ -1043,16 +1043,20 @@ var Feed = function () {
           previous_items: options.previousItems
         }),
         tokenProvider: this.readTokenProvider,
-        onEvent: options.onItem
+        onEvent: function onEvent(_ref2) {
+          var body = _ref2.body,
+              eventId = _ref2.eventId;
+          return options.onItem(_extends({ id: eventId }, body));
+        }
       }));
     }
   }, {
     key: "paginate",
     value: function paginate() {
-      var _ref2 = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
-          cursor = _ref2.cursor,
-          _ref2$limit = _ref2.limit,
-          limit = _ref2$limit === undefined ? 50 : _ref2$limit;
+      var _ref3 = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
+          cursor = _ref3.cursor,
+          _ref3$limit = _ref3.limit,
+          limit = _ref3$limit === undefined ? 50 : _ref3$limit;
 
       return parseResponse(this.instance.request({
         method: "GET",

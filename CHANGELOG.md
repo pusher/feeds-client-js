@@ -2,6 +2,10 @@
 
 ## Unreleased
 ### Changed
+- Changed structure of subscribed item in `onItem` callback to have same format as in `paginate` method.
+
+## Unreleased
+### Changed
 - Rename `getHistory` to `paginate` and the paramater `fromId` to `cursor`.
   This is a breaking change.
 

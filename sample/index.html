@@ -15,9 +15,9 @@
           console.log("Feeds: Connection established");
         },
         onItem: item => {
-          console.log("Feeds new item:", item.body.data);
+          console.log("Feeds new item:", item);
           document.body.innerHTML +=
-            `<p>${JSON.stringify(item.body.data)}</p>`;
+            `<p>${JSON.stringify(item.data)}</p>`;
         },
         onError: error => {
           console.error("Error:", error);
