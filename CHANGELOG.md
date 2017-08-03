@@ -2,7 +2,7 @@
 
 ## Unreleased
 ### Changed
-- Changed structure of subscribed item in `onItem` method to have same format as in `paginate` method.
+- Changed structure of subscribed item in `onItem` callback to have same format as in `paginate` method.
 
 ## Unreleased
 ### Changed
