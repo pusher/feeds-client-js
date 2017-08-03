@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.1 -- 2017-08-03
+### Changed
+- Rename `lastEventId` to `lastItemId`.
+
 ## 0.8.0 -- 2017-08-03
 ### Changed
 - Rename `getHistory` to `paginate` and the paramater `fromId` to `cursor`.
