@@ -74,7 +74,7 @@ const yourFeed = feeds.feed(your_feed_id);
 
 Given a feed object such as `yourFeed` above, use `yourFeed.subscribe` to
 receive new items published to `yourFeed`. A subscription can be resumed from
-some previously seen item by providing a `lastEventId`, or can be initiated
+some previously seen item by providing a `lastItemId`, or can be initiated
 with a fixed number of previously seen items by providing the `previousItems`
 option.  [Private
 feeds](http://docs.pusher.com/feeds/concepts/private-feeds) require `"READ"`
@@ -82,12 +82,12 @@ permission. Takes a single options object with the following properties.
 
 - `onItem`: [required] callback to handle items, takes each item as a parameter
 
-- `lastEventId`: [optional] retrieve every item published after `lastEventId`,
+- `lastItemId`: [optional] retrieve every item published after `lastItemId`,
   and then live items as they are published
 
 - `previousItems`: [optional] if this parameter is provided, then the most recent
   `previousItems` items will be retrieved, followed by live items as they are
-  published (`lastEventId` takes precedence if both are provided)
+  published (`lastItemId` takes precedence if both are provided)
 
 - `onOpen`: [optional] callback to fire when the subscription is open
 

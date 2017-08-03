@@ -13,6 +13,8 @@ export default class Feed {
     }
     return this.instance.resumableSubscribe({
       ...options,
+      // Mapping our itemId to platform library eventId
+      lastEventId: options.lastItemId,
       path: `feeds/${ this.feedId }/items` + queryString({
         previous_items: options.previousItems,
       }),
