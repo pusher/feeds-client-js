@@ -155,9 +155,13 @@ the following format.
       data: item_data
     }
     ...
-  ]
+  ],
+  next_cursor: next_cursor
 }
 ```
+
+`next_cursor` should be used as the `cursor` parameter to get the next page of
+results. It will be `null` if there are no more results.
 
 ### Example
 
