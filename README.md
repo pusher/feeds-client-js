@@ -136,7 +136,7 @@ feeds](http://docs.pusher.com/feeds/concepts/private-feeds) require `"READ"`
 permission. Takes a single (optional) options object with the following
 properties.
 
-- `fromId`: [optional] look back in the past from this ID; retrieves items
+- `cursor`: [optional] look back in the past from this ID; retrieves items
   _older_ than this ID – if not provided, retrieves the most recently published
   items
 
