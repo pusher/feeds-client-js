@@ -21,7 +21,7 @@ export default class Feed {
     });
   }
 
-  getHistory({ cursor, limit = 50 } = {}) {
+  paginate({ cursor, limit = 50 } = {}) {
     return parseResponse(this.instance.request({
       method: "GET",
       path: `feeds/${ this.feedId }/items` + queryString({
