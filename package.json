@@ -19,6 +19,7 @@
     "babel-plugin-external-helpers": "^6.22.0",
     "babel-plugin-transform-object-rest-spread": "^6.23.0",
     "babel-preset-latest": "^6.24.1",
+    "eslint": "^4.4.1",
     "rollup": "^0.42.0",
     "rollup-plugin-babel": "^2.7.1",
     "rollup-plugin-commonjs": "^8.0.2",
@@ -27,8 +28,8 @@
   },
   "scripts": {
     "build": "rollup -c",
-    "dev": "rollup -c -w",
-    "deploy": "script/deploy"
+    "lint": "yarn eslint src",
+    "dev": "ag -l | entr -s 'echo \"\n...\" && yarn lint && rollup -c'"
   },
   "version": "0.8.2"
 }

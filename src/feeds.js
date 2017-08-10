@@ -103,6 +103,6 @@ function validateFirehoseCallbacks(callbacks) {
     }
   });
   if (defined.length === 0) {
-    throw new TypeError(`Must provide at least one of onPublish, onSubscribe, or onUnsubscribe`);
+    throw new TypeError("Must provide at least one of onPublish, onSubscribe, or onUnsubscribe");
   }
 }

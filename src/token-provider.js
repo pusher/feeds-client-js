@@ -49,7 +49,7 @@ export default class TokenProvider {
         reject(new Error(`Request timed out while fetching token from ${
           this.authEndpoint
         }`));
-      }
+      };
       xhr.setRequestHeader("content-type", "application/x-www-form-urlencoded");
       xhr.send(urlEncode({
         ...this.authData,
