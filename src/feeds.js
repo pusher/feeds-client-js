@@ -59,7 +59,7 @@ export default class Feeds {
       throw new TypeError(`Invalid feedId: ${ feedId }`);
     }
     const readTokenProvider = feedId.startsWith("private-") ? new TokenProvider({
-      authEndpoint:  this.authEndpoint,
+      authEndpoint: this.authEndpoint,
       authData: {
         ...this.authData,
         path: `feeds/${ feedId }/items`,
