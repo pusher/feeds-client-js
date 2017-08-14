@@ -1,16 +1,35 @@
 import { parseResponse, queryString } from "./utils";
 
+class EventHandler {
+  constructor({ onOpen = (() => {}), onItem }) {
+    this.onOpen = onOpen;
+    this.onItem = onItem;
+    this.subscribed = false;
+  }
+
+  handle(event) {
+    if (this.subscribed) {
+      this.onItem({ id: event.eventId, ...event.body });
+      return;
+    }
+    this.subscribed = true;
+    this.onOpen(event.body);
+  }
+}
+
 export default class Feed {
   constructor({ instance, feedId, readTokenProvider }) {
     this.instance = instance;
     this.feedId = feedId;
     this.readTokenProvider = readTokenProvider;
+    this.subscribed = false;
   }
 
   subscribe(options = {}) {
     if (typeof options.onItem !== "function") {
       throw new TypeError("Must provide an `onItem` callback");
     }
+    const eventHandler = new EventHandler(options);
     return this.instance.resumableSubscribe({
       ...options,
       // Mapping our itemId to platform library eventId
@@ -19,7 +38,9 @@ export default class Feed {
         previous_items: options.previousItems,
       }),
       tokenProvider: this.readTokenProvider,
-      onEvent: ({body, eventId}) => options.onItem({ id: eventId, ...body })
+      onEvent: event => eventHandler.handle(event),
+      // We highjack onOpen to parse our subscription success event
+      onOpen: null,
     });
   }
 

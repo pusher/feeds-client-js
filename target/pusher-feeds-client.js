@@ -1149,16 +1149,43 @@ var objectWithoutProperties = function (obj, keys) {
   return target;
 };
 
+var EventHandler = function () {
+  function EventHandler(_ref) {
+    var _ref$onOpen = _ref.onOpen,
+        onOpen = _ref$onOpen === undefined ? function () {} : _ref$onOpen,
+        onItem = _ref.onItem;
+    classCallCheck(this, EventHandler);
+
+    this.onOpen = onOpen;
+    this.onItem = onItem;
+    this.subscribed = false;
+  }
+
+  createClass(EventHandler, [{
+    key: "handle",
+    value: function handle(event) {
+      if (this.subscribed) {
+        this.onItem(_extends({ id: event.eventId }, event.body));
+        return;
+      }
+      this.subscribed = true;
+      this.onOpen(event.body);
+    }
+  }]);
+  return EventHandler;
+}();
+
 var Feed = function () {
-  function Feed(_ref) {
-    var instance = _ref.instance,
-        feedId = _ref.feedId,
-        readTokenProvider = _ref.readTokenProvider;
+  function Feed(_ref2) {
+    var instance = _ref2.instance,
+        feedId = _ref2.feedId,
+        readTokenProvider = _ref2.readTokenProvider;
     classCallCheck(this, Feed);
 
     this.instance = instance;
     this.feedId = feedId;
     this.readTokenProvider = readTokenProvider;
+    this.subscribed = false;
   }
 
   createClass(Feed, [{
@@ -1169,6 +1196,7 @@ var Feed = function () {
       if (typeof options.onItem !== "function") {
         throw new TypeError("Must provide an `onItem` callback");
       }
+      var eventHandler = new EventHandler(options);
       return this.instance.resumableSubscribe(_extends({}, options, {
         // Mapping our itemId to platform library eventId
         lastEventId: options.lastItemId,
@@ -1176,11 +1204,11 @@ var Feed = function () {
           previous_items: options.previousItems
         }),
         tokenProvider: this.readTokenProvider,
-        onEvent: function onEvent(_ref2) {
-          var body = _ref2.body,
-              eventId = _ref2.eventId;
-          return options.onItem(_extends({ id: eventId }, body));
-        }
+        onEvent: function onEvent(event) {
+          return eventHandler.handle(event);
+        },
+        // We highjack onOpen to parse our subscription success event
+        onOpen: null
       }));
     }
   }, {

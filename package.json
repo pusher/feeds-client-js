@@ -29,7 +29,7 @@
   "scripts": {
     "build": "rollup -c",
     "lint": "yarn eslint src",
-    "dev": "ag -l | entr -s 'echo \"\n...\" && yarn lint && rollup -c'"
+    "dev": "ag -l --ignore target | entr -s 'echo \"\n...\" && yarn lint && rollup -c'"
   },
   "version": "0.8.2"
 }
