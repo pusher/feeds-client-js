@@ -1,22 +1,5 @@
 import { parseResponse, queryString } from "./utils";
 
-class EventHandler {
-  constructor({ onOpen = (() => {}), onItem }) {
-    this.onOpen = onOpen;
-    this.onItem = onItem;
-    this.subscribed = false;
-  }
-
-  handle(event) {
-    if (this.subscribed) {
-      this.onItem({ id: event.eventId, ...event.body });
-      return;
-    }
-    this.subscribed = true;
-    this.onOpen(event.body);
-  }
-}
-
 export default class Feed {
   constructor({ instance, feedId, readTokenProvider }) {
     this.instance = instance;
@@ -25,11 +8,24 @@ export default class Feed {
     this.subscribed = false;
   }
 
-  subscribe(options = {}) {
-    if (typeof options.onItem !== "function") {
+  subscribe({ onOpen, onItem, ...options } = {}) {
+    if (onOpen && typeof onOpen !== "function") {
+      throw new TypeError(`onOpen must be a function, got ${ onOpen }`);
+    }
+    if (typeof onItem !== "function") {
       throw new TypeError("Must provide an `onItem` callback");
     }
-    const eventHandler = new EventHandler(options);
+    const onEvent = event => {
+      if (event.body.event_type === 0 && onOpen) {
+        onOpen(event.body.data);
+      } else if (event.body.event_type === 1 && onItem) {
+        onItem({ id: event.eventId, ...event.body });
+      } else {
+        throw new TypeError(`Unsupported event type '${
+          event.body.event_type
+        }'`);
+      }
+    };
     return this.instance.resumableSubscribe({
       ...options,
       // Mapping our itemId to platform library eventId
@@ -38,9 +34,7 @@ export default class Feed {
         previous_items: options.previousItems,
       }),
       tokenProvider: this.readTokenProvider,
-      onEvent: event => eventHandler.handle(event),
-      // We highjack onOpen to parse our subscription success event
-      onOpen: null,
+      onEvent,
     });
   }
 
