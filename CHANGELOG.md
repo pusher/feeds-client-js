@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.9.0 -- 2017-08-21
 ### Added
 - The response to `paginate` now also contains a `remaining` key – the number
   of unseen items left in the feed.
