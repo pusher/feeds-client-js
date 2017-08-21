@@ -1178,12 +1178,12 @@ var Feed = function () {
         throw new TypeError("Must provide an `onItem` callback");
       }
       var onEvent = function onEvent(event) {
-        if (event.body.event_type === 0 && onOpen) {
+        if (event.body.type === 0 && onOpen) {
           onOpen(event.body.data);
-        } else if (event.body.event_type === 1 && onItem) {
-          onItem(_extends({ id: event.eventId }, event.body));
+        } else if (event.body.type === 1 && onItem) {
+          onItem(event.body.data);
         } else {
-          throw new TypeError("Unsupported event type '" + event.body.event_type + "'");
+          throw new TypeError("Unsupported event type '" + event.body.type + "'");
         }
       };
       return this.instance.resumableSubscribe(_extends({}, options, {
@@ -1374,14 +1374,14 @@ var Feeds = function () {
 
       validateFirehoseCallbacks({ onPublish: onPublish, onSubscribe: onSubscribe, onUnsubscribe: onUnsubscribe });
       var onEvent = function onEvent(event) {
-        if (event.body.event_type === 0 && onPublish) {
-          onPublish(event);
-        } else if (event.body.event_type === 1 && onSubscribe) {
-          onSubscribe(event);
-        } else if (event.body.event_type === 2 && onUnsubscribe) {
-          onUnsubscribe(event);
+        if (event.body.type === 0 && onPublish) {
+          onPublish(event.body.data);
+        } else if (event.body.type === 1 && onSubscribe) {
+          onSubscribe(event.body.data);
+        } else if (event.body.type === 2 && onUnsubscribe) {
+          onUnsubscribe(event.body.data);
         } else {
-          throw new TypeError("Unsupported firehose event type '" + event.body.event_type + "'");
+          throw new TypeError("Unsupported firehose event type '" + event.body.type + "'");
         }
       };
       return this.instance.subscribe(_extends({}, options, {

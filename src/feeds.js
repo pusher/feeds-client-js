@@ -76,15 +76,15 @@ export default class Feeds {
   firehose({ onPublish, onSubscribe, onUnsubscribe, ...options } = {}) {
     validateFirehoseCallbacks({ onPublish, onSubscribe, onUnsubscribe });
     const onEvent = event => {
-      if (event.body.event_type === 0 && onPublish) {
-        onPublish(event);
-      } else if (event.body.event_type === 1 && onSubscribe) {
-        onSubscribe(event);
-      } else if (event.body.event_type === 2 && onUnsubscribe) {
-        onUnsubscribe(event);
+      if (event.body.type === 0 && onPublish) {
+        onPublish(event.body.data);
+      } else if (event.body.type === 1 && onSubscribe) {
+        onSubscribe(event.body.data);
+      } else if (event.body.type === 2 && onUnsubscribe) {
+        onUnsubscribe(event.body.data);
       } else {
         throw new TypeError(`Unsupported firehose event type '${
-          event.body.event_type
+          event.body.type
         }'`);
       }
     };

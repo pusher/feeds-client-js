@@ -16,13 +16,13 @@ export default class Feed {
       throw new TypeError("Must provide an `onItem` callback");
     }
     const onEvent = event => {
-      if (event.body.event_type === 0 && onOpen) {
+      if (event.body.type === 0 && onOpen) {
         onOpen(event.body.data);
-      } else if (event.body.event_type === 1 && onItem) {
-        onItem({ id: event.eventId, ...event.body });
+      } else if (event.body.type === 1 && onItem) {
+        onItem(event.body.data);
       } else {
         throw new TypeError(`Unsupported event type '${
-          event.body.event_type
+          event.body.type
         }'`);
       }
     };
