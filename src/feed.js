@@ -5,12 +5,27 @@ export default class Feed {
     this.instance = instance;
     this.feedId = feedId;
     this.readTokenProvider = readTokenProvider;
+    this.subscribed = false;
   }
 
-  subscribe(options = {}) {
-    if (typeof options.onItem !== "function") {
+  subscribe({ onOpen, onItem, ...options } = {}) {
+    if (onOpen && typeof onOpen !== "function") {
+      throw new TypeError(`onOpen must be a function, got ${ onOpen }`);
+    }
+    if (typeof onItem !== "function") {
       throw new TypeError("Must provide an `onItem` callback");
     }
+    const onEvent = event => {
+      if (event.body.type === 0 && onOpen) {
+        onOpen(event.body.data);
+      } else if (event.body.type === 1 && onItem) {
+        onItem(event.body.data);
+      } else {
+        throw new TypeError(`Unsupported event type '${
+          event.body.type
+        }'`);
+      }
+    };
     return this.instance.resumableSubscribe({
       ...options,
       // Mapping our itemId to platform library eventId
@@ -19,7 +34,7 @@ export default class Feed {
         previous_items: options.previousItems,
       }),
       tokenProvider: this.readTokenProvider,
-      onEvent: ({body, eventId}) => options.onItem({ id: eventId, ...body })
+      onEvent,
     });
   }
 

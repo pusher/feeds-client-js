@@ -89,7 +89,8 @@ permission. Takes a single options object with the following properties.
   `previousItems` items will be retrieved, followed by live items as they are
   published (`lastItemId` takes precedence if both are provided)
 
-- `onOpen`: [optional] callback to fire when the subscription is open
+- `onOpen`: [optional] callback to fire when the subscription is open, takes an
+  object containing `next_cursor` as a parameter
 
 - `onEnd`: [optional] callback to fire when the subscription ends normally
 
@@ -113,8 +114,12 @@ Items are passed to the `onItem` callback with the following format
 ```js
 const subscription = feed.subscribe({
   previousItems: 10,
-  onItem: ({ created, data }) => {
-    // Update the DOM with the item data
+  onOpen: ({ next_cursor }) => {
+    // Keep track of next_cursor if you might want to paginate back through
+    // previous items later on [optional]
+  },
+  onItem: item => {
+    // Update the DOM with the item
   },
   onError: error => {
     console.error(`Error with subscription: ${error}`)

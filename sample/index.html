@@ -4,20 +4,26 @@
     <script type="text/javascript" src="../target/pusher-feeds-client.js"></script>
     <script type="text/javascript">
       const feeds = new Feeds({
-        instanceId: "YOUR_INSTANCE_STRING",
+        instanceId: "YOUR_INSTANCE_ID",
       });
 
       const playground = feeds.feed("playground");
 
-      playground.subscribe({
+      const sub = playground.subscribe({
         previousItems: 5,
-        onOpen: () => {
-          console.log("Feeds: Connection established");
+        onOpen: ({ next_cursor }) => {
+          if (next_cursor) {
+            console.log(`Feeds: Successfully subscribed. next_cursor: ${
+              next_cursor
+            }`);
+          } else {
+            console.log("Feeds: Successfully subscribed. No previous items.");
+          }
         },
         onItem: item => {
           console.log("Feeds new item:", item);
           document.body.innerHTML +=
-            `<p>${JSON.stringify(item.data)}</p>`;
+            `<p>${ JSON.stringify(item.data) }</p>`;
         },
         onError: error => {
           console.error("Error:", error);
