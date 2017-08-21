@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+### Added
+- The response to `paginate` now also contains a `remaining` key – the number
+  of unseen items left in the feed.
+- `onOpen` is now passed an object: `{ next_cursor, remaining }` with the same
+  semantics as for `paginate`.
+
+### Changed
+- `firehose` events are now unwrapped at the SDK level. i.e. callbacks are passed `event.body.data` rather than `event`.
+
 ## 0.8.1 -- 2017-08-03
 ### Changed
 - Rename `lastEventId` to `lastItemId`.
