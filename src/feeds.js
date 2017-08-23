@@ -82,7 +82,7 @@ export default class Feeds {
         onSubscribe(event.body.data);
       } else if (event.body.type === 2 && onUnsubscribe) {
         onUnsubscribe(event.body.data);
-      } else {
+      } else if (event.body.type > 2) {
         throw new TypeError(`Unsupported firehose event type '${
           event.body.type
         }'`);

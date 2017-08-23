@@ -20,7 +20,7 @@ export default class Feed {
         onOpen(event.body.data);
       } else if (event.body.type === 1 && onItem) {
         onItem(event.body.data);
-      } else {
+      } else if (event.body.type > 1) {
         throw new TypeError(`Unsupported event type '${
           event.body.type
         }'`);

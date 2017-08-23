@@ -11,14 +11,12 @@
 
       const sub = playground.subscribe({
         previousItems: 5,
-        onOpen: ({ next_cursor }) => {
-          if (next_cursor) {
-            console.log(`Feeds: Successfully subscribed. next_cursor: ${
-              next_cursor
-            }`);
-          } else {
-            console.log("Feeds: Successfully subscribed. No previous items.");
-          }
+        onOpen: ({ next_cursor, remaining }) => {
+          console.log(`Feeds: Successfully subscribed. next_cursor: ${
+            next_cursor
+          }, remaining: ${
+            remaining
+          }`);
         },
         onItem: item => {
           console.log("Feeds new item:", item);

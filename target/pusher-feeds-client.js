@@ -1182,7 +1182,7 @@ var Feed = function () {
           onOpen(event.body.data);
         } else if (event.body.type === 1 && onItem) {
           onItem(event.body.data);
-        } else {
+        } else if (event.body.type > 1) {
           throw new TypeError("Unsupported event type '" + event.body.type + "'");
         }
       };
@@ -1380,7 +1380,7 @@ var Feeds = function () {
           onSubscribe(event.body.data);
         } else if (event.body.type === 2 && onUnsubscribe) {
           onUnsubscribe(event.body.data);
-        } else {
+        } else if (event.body.type > 2) {
           throw new TypeError("Unsupported firehose event type '" + event.body.type + "'");
         }
       };
