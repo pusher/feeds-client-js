@@ -90,7 +90,7 @@ permission. Takes a single options object with the following properties.
   published (`lastItemId` takes precedence if both are provided)
 
 - `onOpen`: [optional] callback to fire when the subscription is open, takes an
-  object containing `next_cursor` as a parameter
+  object containing `next_cursor` and `remaining` as a parameter
 
 - `onEnd`: [optional] callback to fire when the subscription ends normally
 
@@ -114,9 +114,9 @@ Items are passed to the `onItem` callback with the following format
 ```js
 const subscription = feed.subscribe({
   previousItems: 10,
-  onOpen: ({ next_cursor }) => {
-    // Keep track of next_cursor if you might want to paginate back through
-    // previous items later on [optional]
+  onOpen: ({ next_cursor, remaining }) => {
+    // Keep track of next_cursor and remaining if you might want to paginate
+    // back through previous items later on [optional]
   },
   onItem: item => {
     // Update the DOM with the item
@@ -159,11 +159,13 @@ the following format.
     ...
   ],
   next_cursor: next_cursor
+  remaining: remaining
 }
 ```
 
 `next_cursor` should be used as the `cursor` parameter to get the next page of
-results. It will be `null` if there are no more results.
+results. It will be `null` if there are no more results. `remaining` is a count
+of the number of unseen items further back in the history of the feed.
 
 ### Example
 
