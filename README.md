@@ -158,7 +158,7 @@ the following format.
     }
     ...
   ],
-  next_cursor: next_cursor
+  next_cursor: next_cursor,
   remaining: remaining
 }
 ```
