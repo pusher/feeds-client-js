@@ -55,7 +55,7 @@ interface Logger {
 ### Example
 
 ```js
-const feeds = new Feeds({ serviceId: your_service_id });
+const feeds = new Feeds({ instanceId: your_instance_id });
 ```
 
 ## Get a reference to a feed
