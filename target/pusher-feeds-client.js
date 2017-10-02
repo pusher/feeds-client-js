@@ -1159,7 +1159,6 @@ var Feed = function () {
     this.instance = instance;
     this.feedId = feedId;
     this.readTokenProvider = readTokenProvider;
-    this.subscribed = false;
   }
 
   createClass(Feed, [{

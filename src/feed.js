@@ -5,7 +5,6 @@ export default class Feed {
     this.instance = instance;
     this.feedId = feedId;
     this.readTokenProvider = readTokenProvider;
-    this.subscribed = false;
   }
 
   subscribe({ onOpen, onItem, ...options } = {}) {
