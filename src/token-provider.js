@@ -31,8 +31,8 @@ export default class TokenProvider {
   }
 
   makeAuthRequest() {
-    if (!this.authEndpoint) {
-      throw new TypeError("Please configure an authEndpoint to gain access to private feeds. (See http://docs.pusher.com/feeds/concepts/private-feeds/)");
+    if (typeof this.authEndpoint != "string") {
+      throw new TypeError(`Expected authEndpoint to be a string, but got ${this.authEndpoint}. Please provide an authEndpoint to access private feeds. (See http://docs.pusher.com/feeds/concepts/private-feeds/)`);
     }
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
