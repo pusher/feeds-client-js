@@ -1218,7 +1218,6 @@ var Feed = function () {
 
 var cacheExpiryTolerance = 10 * 60; // 10 minutes (in seconds)
 var feedIdRegex = /^[a-zA-Z0-9-]+$/;
-var instanceIdRegex = /^v([1-9][0-9]*):([a-zA-Z0-9-]+):([a-zA-Z0-9-]+)$/;
 var tokenProviderTimeout = 30 * 1000; // 30 seconds (in ms)
 
 var TokenProvider = function () {
@@ -1255,8 +1254,8 @@ var TokenProvider = function () {
     value: function makeAuthRequest() {
       var _this2 = this;
 
-      if (!this.authEndpoint) {
-        throw new TypeError("Please configure an authEndpoint to gain access to private feeds. (See http://docs.pusher.com/feeds/concepts/private-feeds/)");
+      if (typeof this.authEndpoint != "string") {
+        throw new TypeError("Expected authEndpoint to be a string, but got " + this.authEndpoint + ". Please provide an authEndpoint to access private feeds. (See http://docs.pusher.com/feeds/concepts/private-feeds/)");
       }
       return new Promise(function (resolve, reject) {
         var xhr = new XMLHttpRequest();
@@ -1301,13 +1300,7 @@ var Feeds = function () {
     classCallCheck(this, Feeds);
 
     this.authData = authData;
-    if (!authEndpoint) {
-      console.warn("No authEndpoint provided; subscriptions to private feeds will fail.");
-    }
     this.authEndpoint = authEndpoint;
-    if (!instanceId || !instanceId.match(instanceIdRegex)) {
-      throw new TypeError("Invalid instanceId: " + instanceId);
-    }
     this.listTokenProvider = new TokenProvider({
       authEndpoint: this.authEndpoint,
       authData: _extends({}, this.authData, {
