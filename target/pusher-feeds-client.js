@@ -1217,7 +1217,6 @@ var Feed = function () {
 }();
 
 var cacheExpiryTolerance = 10 * 60; // 10 minutes (in seconds)
-var defaultAuthEndpoint = "/feeds/tokens";
 var feedIdRegex = /^[a-zA-Z0-9-]+$/;
 var tokenProviderTimeout = 30 * 1000; // 30 seconds (in ms)
 
@@ -1227,7 +1226,7 @@ var TokenProvider = function () {
         authData = _ref.authData;
     classCallCheck(this, TokenProvider);
 
-    this.authEndpoint = authEndpoint || defaultAuthEndpoint;
+    this.authEndpoint = authEndpoint;
     this.authData = authData;
   }
 
@@ -1255,6 +1254,9 @@ var TokenProvider = function () {
     value: function makeAuthRequest() {
       var _this2 = this;
 
+      if (typeof this.authEndpoint != "string") {
+        throw new TypeError("Expected authEndpoint to be a string, but got " + this.authEndpoint + ". Please provide an authEndpoint to access private feeds. (See http://docs.pusher.com/feeds/concepts/private-feeds/)");
+      }
       return new Promise(function (resolve, reject) {
         var xhr = new XMLHttpRequest();
         xhr.open("POST", _this2.authEndpoint);
