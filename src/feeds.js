@@ -14,9 +14,6 @@ export default class Feeds {
     logger,
   } = {}) {
     this.authData = authData;
-    if (!authEndpoint) {
-      console.warn("No authEndpoint provided; subscriptions to private feeds will fail.");
-    }
     this.authEndpoint = authEndpoint;
     if (!instanceId || !instanceId.match(instanceIdRegex)) {
       throw new TypeError(`Invalid instanceId: ${ instanceId }`);
