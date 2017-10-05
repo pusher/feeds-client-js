@@ -1219,7 +1219,6 @@ var Feed = function () {
 var cacheExpiryTolerance = 10 * 60; // 10 minutes (in seconds)
 var defaultAuthEndpoint = "/feeds/tokens";
 var feedIdRegex = /^[a-zA-Z0-9-]+$/;
-var instanceIdRegex = /^v([1-9][0-9]*):([a-zA-Z0-9-]+):([a-zA-Z0-9-]+)$/;
 var tokenProviderTimeout = 30 * 1000; // 30 seconds (in ms)
 
 var TokenProvider = function () {
@@ -1300,9 +1299,6 @@ var Feeds = function () {
 
     this.authData = authData;
     this.authEndpoint = authEndpoint;
-    if (!instanceId || !instanceId.match(instanceIdRegex)) {
-      throw new TypeError("Invalid instanceId: " + instanceId);
-    }
     this.listTokenProvider = new TokenProvider({
       authEndpoint: this.authEndpoint,
       authData: _extends({}, this.authData, {

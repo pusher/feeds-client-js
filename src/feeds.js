@@ -1,7 +1,7 @@
 import PusherPlatform from "pusher-platform";
 import Feed from "./feed";
 import TokenProvider from "./token-provider";
-import { feedIdRegex, instanceIdRegex } from "./constants";
+import { feedIdRegex } from "./constants";
 import { parseResponse, queryString } from "./utils";
 
 export default class Feeds {
@@ -15,9 +15,6 @@ export default class Feeds {
   } = {}) {
     this.authData = authData;
     this.authEndpoint = authEndpoint;
-    if (!instanceId || !instanceId.match(instanceIdRegex)) {
-      throw new TypeError(`Invalid instanceId: ${ instanceId }`);
-    }
     this.listTokenProvider = new TokenProvider({
       authEndpoint: this.authEndpoint,
       authData: {
