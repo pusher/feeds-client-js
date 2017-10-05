@@ -1,6 +1,5 @@
 import {
   cacheExpiryTolerance,
-  defaultAuthEndpoint,
   tokenProviderTimeout,
 } from "./constants";
 
@@ -8,7 +7,7 @@ import { urlEncode, unixTimeNow } from "./utils";
 
 export default class TokenProvider {
   constructor({ authEndpoint, authData }) {
-    this.authEndpoint = authEndpoint || defaultAuthEndpoint;
+    this.authEndpoint = authEndpoint;
     this.authData = authData;
   }
 
@@ -32,6 +31,9 @@ export default class TokenProvider {
   }
 
   makeAuthRequest() {
+    if (!this.authEndpoint) {
+      throw new TypeError("Please configure an authEndpoint to gain access to private feeds. (See http://docs.pusher.com/feeds/concepts/private-feeds/)");
+    }
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
       xhr.open("POST", this.authEndpoint);
