@@ -99,7 +99,7 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
                 /******/__webpack_require__.p = "";
                 /******/
                 /******/ // Load entry module and return exports
-                /******/return __webpack_require__(__webpack_require__.s = 8);
+                /******/return __webpack_require__(__webpack_require__.s = 12);
                 /******/
             }(
             /************************************************************************/
@@ -109,26 +109,8 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
 
                 "use strict";
 
-                var __extends = this && this.__extends || function () {
-                    var extendStatics = Object.setPrototypeOf || { __proto__: [] } instanceof Array && function (d, b) {
-                        d.__proto__ = b;
-                    } || function (d, b) {
-                        for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-                    };
-                    return function (d, b) {
-                        extendStatics(d, b);
-                        function __() {
-                            this.constructor = d;
-                        }
-                        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-                    };
-                }();
                 Object.defineProperty(exports, "__esModule", { value: true });
-                var logger_1 = __webpack_require__(1);
-                var resumable_subscription_1 = __webpack_require__(3);
-                var retry_strategy_1 = __webpack_require__(4);
-                var stateless_subscription_1 = __webpack_require__(5);
-                function responseHeadersObj(headerStr) {
+                function responseToHeadersObject(headerStr) {
                     var headers = {};
                     if (!headerStr) {
                         return headers;
@@ -145,34 +127,25 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
                     }
                     return headers;
                 }
-                exports.responseHeadersObj = responseHeadersObj;
-                var ErrorResponse = function (_super) {
-                    __extends(ErrorResponse, _super);
+                exports.responseToHeadersObject = responseToHeadersObject;
+                var ErrorResponse = /** @class */function () {
                     function ErrorResponse(statusCode, headers, info) {
-                        var _this = _super.call(this, "ErroResponse: " + statusCode + ": " + info + " \n Headers: " + JSON.stringify(headers)) || this;
-                        Object.setPrototypeOf(_this, ErrorResponse.prototype);
-                        _this.statusCode = statusCode;
-                        _this.headers = headers;
-                        _this.info = info;
-                        return _this;
+                        this.statusCode = statusCode;
+                        this.headers = headers;
+                        this.info = info;
                     }
                     ErrorResponse.fromXHR = function (xhr) {
-                        return new ErrorResponse(xhr.status, responseHeadersObj(xhr.getAllResponseHeaders()), xhr.responseText);
+                        return new ErrorResponse(xhr.status, responseToHeadersObject(xhr.getAllResponseHeaders()), xhr.responseText);
                     };
                     return ErrorResponse;
-                }(Error);
+                }();
                 exports.ErrorResponse = ErrorResponse;
-                var NetworkError = function (_super) {
-                    __extends(NetworkError, _super);
+                var NetworkError = /** @class */function () {
                     function NetworkError(error) {
-                        var _this = _super.call(this, error) || this;
-                        //TODO: ugly hack to make the instanceof calls work. We might have to find a better solution.
-                        Object.setPrototypeOf(_this, NetworkError.prototype);
-                        _this.error = error;
-                        return _this;
+                        this.error = error;
                     }
                     return NetworkError;
-                }(Error);
+                }();
                 exports.NetworkError = NetworkError;
                 // Follows https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest/readyState
                 var XhrReadyState;
@@ -183,68 +156,457 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
                     XhrReadyState[XhrReadyState["LOADING"] = 3] = "LOADING";
                     XhrReadyState[XhrReadyState["DONE"] = 4] = "DONE";
                 })(XhrReadyState = exports.XhrReadyState || (exports.XhrReadyState = {}));
-                var BaseClient = function () {
-                    function BaseClient(options) {
+
+                /***/
+            },
+            /* 1 */
+            /***/function (module, exports, __webpack_require__) {
+
+                "use strict";
+
+                Object.defineProperty(exports, "__esModule", { value: true });
+                var network_1 = __webpack_require__(0);
+                var BaseSubscriptionState;
+                (function (BaseSubscriptionState) {
+                    BaseSubscriptionState[BaseSubscriptionState["UNOPENED"] = 0] = "UNOPENED";
+                    BaseSubscriptionState[BaseSubscriptionState["OPENING"] = 1] = "OPENING";
+                    BaseSubscriptionState[BaseSubscriptionState["OPEN"] = 2] = "OPEN";
+                    BaseSubscriptionState[BaseSubscriptionState["ENDING"] = 3] = "ENDING";
+                    BaseSubscriptionState[BaseSubscriptionState["ENDED"] = 4] = "ENDED"; // called onEnd() or onError(err)
+                })(BaseSubscriptionState = exports.BaseSubscriptionState || (exports.BaseSubscriptionState = {}));
+                var BaseSubscription = /** @class */function () {
+                    function BaseSubscription(xhr, logger, onOpen, onError, onEvent, onEnd) {
+                        if (onOpen === void 0) {
+                            onOpen = function (headers) {};
+                        }
+                        if (onError === void 0) {
+                            onError = function (error) {};
+                        }
+                        if (onEvent === void 0) {
+                            onEvent = function (event) {};
+                        }
+                        if (onEnd === void 0) {
+                            onEnd = function (error) {};
+                        }
+                        var _this = this;
+                        this.xhr = xhr;
+                        this.logger = logger;
+                        this.onOpen = onOpen;
+                        this.onError = onError;
+                        this.onEvent = onEvent;
+                        this.onEnd = onEnd;
+                        this.state = BaseSubscriptionState.UNOPENED;
+                        this.lastNewlineIndex = 0;
+                        /******
+                        Message parsing
+                        ******/
+                        this.gotEOS = false;
+                        xhr.onreadystatechange = function () {
+                            switch (_this.xhr.readyState) {
+                                case network_1.XhrReadyState.UNSENT:
+                                case network_1.XhrReadyState.OPENED:
+                                case network_1.XhrReadyState.HEADERS_RECEIVED:
+                                    _this.assertStateIsIn(BaseSubscriptionState.OPENING);
+                                    break;
+                                case network_1.XhrReadyState.LOADING:
+                                    _this.onLoading();
+                                    break;
+                                case network_1.XhrReadyState.DONE:
+                                    _this.onDone();
+                                    break;
+                            }
+                        };
+                        this.state = BaseSubscriptionState.OPENING;
+                        this.xhr.send();
+                    }
+                    BaseSubscription.prototype.unsubscribe = function () {
+                        this.state = BaseSubscriptionState.ENDED;
+                        this.xhr.abort();
+                        this.onEnd();
+                    };
+                    BaseSubscription.prototype.getHeaders = function () {
+                        return network_1.responseToHeadersObject(this.xhr.getAllResponseHeaders());
+                    };
+                    BaseSubscription.prototype.onLoading = function () {
+                        this.assertStateIsIn(BaseSubscriptionState.OPENING, BaseSubscriptionState.OPEN, BaseSubscriptionState.ENDING);
+                        if (this.xhr.status === 200) {
+                            //Check if we just transitioned to the open state
+                            if (this.state === BaseSubscriptionState.OPENING) {
+                                this.state = BaseSubscriptionState.OPEN;
+                                this.onOpen(network_1.responseToHeadersObject(this.xhr.getAllResponseHeaders()));
+                            }
+                            this.assertStateIsIn(BaseSubscriptionState.OPEN);
+                            var err = this.onChunk(); // might transition our state from OPEN -> ENDING
+                            this.assertStateIsIn(BaseSubscriptionState.OPEN, BaseSubscriptionState.ENDING);
+                            if (err) {
+                                this.state = BaseSubscriptionState.ENDED;
+                                if (err instanceof network_1.ErrorResponse && err.statusCode != 204) {
+                                    this.onError(err);
+                                }
+                                // Because we abort()ed, we will get no more calls to our onreadystatechange handler,
+                                // and so we will not call the event handler again.
+                                // Finish with options.onError instead of the options.onEnd.
+                            } else {
+                                    // We consumed some response text, and all's fine. We expect more text.
+                                }
+                        }
+                    };
+                    BaseSubscription.prototype.onDone = function () {
+                        if (this.xhr.status === 200) {
+                            if (this.state === BaseSubscriptionState.OPENING) {
+                                this.state = BaseSubscriptionState.OPEN;
+                                this.onOpen(network_1.responseToHeadersObject(this.xhr.getAllResponseHeaders()));
+                            }
+                            this.assertStateIsIn(BaseSubscriptionState.OPEN, BaseSubscriptionState.ENDING);
+                            var err = this.onChunk();
+                            if (err) {
+                                this.state = BaseSubscriptionState.ENDED;
+                                if (err.statusCode === 204) {
+                                    this.onEnd();
+                                } else {
+                                    this.onError(err);
+                                }
+                            } else if (this.state <= BaseSubscriptionState.ENDING) {
+                                this.onError(new Error("HTTP response ended without receiving EOS message"));
+                            } else {
+                                // Stream ended normally.
+                                this.onEnd();
+                            }
+                        } else {
+                            this.assertStateIsIn(BaseSubscriptionState.OPENING, BaseSubscriptionState.OPEN, BaseSubscriptionState.ENDED);
+                            if (this.state === BaseSubscriptionState.ENDED) {
+                                // We aborted the request deliberately, and called onError/onEnd elsewhere.
+                                return;
+                            } else if (this.xhr.status === 0) {
+                                this.onError(new network_1.NetworkError("Connection lost."));
+                            } else {
+                                this.onError(network_1.ErrorResponse.fromXHR(this.xhr));
+                            }
+                        }
+                    };
+                    BaseSubscription.prototype.onChunk = function () {
+                        this.assertStateIsIn(BaseSubscriptionState.OPEN);
+                        var response = this.xhr.responseText;
+                        var newlineIndex = response.lastIndexOf("\n");
+                        if (newlineIndex > this.lastNewlineIndex) {
+                            var rawEvents = response.slice(this.lastNewlineIndex, newlineIndex).split("\n");
+                            this.lastNewlineIndex = newlineIndex;
+                            for (var _i = 0, rawEvents_1 = rawEvents; _i < rawEvents_1.length; _i++) {
+                                var rawEvent = rawEvents_1[_i];
+                                if (rawEvent.length === 0) {
+                                    continue; // FIXME why? This should be a protocol error
+                                }
+                                var data = JSON.parse(rawEvent);
+                                var err = this.onMessage(data);
+                                if (err != null) {
+                                    return err;
+                                }
+                            }
+                        }
+                    };
+                    /**
+                    * Calls options.onEvent 0+ times, then returns an Error or null
+                    * Also asserts the message is formatted correctly and we're in an allowed state (not terminated).
+                    */
+                    BaseSubscription.prototype.onMessage = function (message) {
+                        this.assertStateIsIn(BaseSubscriptionState.OPEN);
+                        this.verifyMessage(message);
+                        switch (message[0]) {
+                            case 0:
+                                return null;
+                            case 1:
+                                return this.onEventMessage(message);
+                            case 255:
+                                return this.onEOSMessage(message);
+                            default:
+                                return new Error("Unknown Message: " + JSON.stringify(message));
+                        }
+                    };
+                    // EITHER calls options.onEvent, OR returns an error
+                    BaseSubscription.prototype.onEventMessage = function (eventMessage) {
+                        this.assertStateIsIn(BaseSubscriptionState.OPEN);
+                        if (eventMessage.length !== 4) {
+                            return new Error("Event message has " + eventMessage.length + " elements (expected 4)");
+                        }
+                        var _ = eventMessage[0],
+                            id = eventMessage[1],
+                            headers = eventMessage[2],
+                            body = eventMessage[3];
+                        if (typeof id !== "string") {
+                            return new Error("Invalid event ID in message: " + JSON.stringify(eventMessage));
+                        }
+                        if (typeof headers !== "object" || Array.isArray(headers)) {
+                            return new Error("Invalid event headers in message: " + JSON.stringify(eventMessage));
+                        }
+                        this.onEvent({ eventId: id, headers: headers, body: body });
+                    };
+                    /**
+                    * EOS message received. Sets subscription state to Ending and returns an error with given status code
+                    * @param eosMessage final message of the subscription
+                    */
+                    BaseSubscription.prototype.onEOSMessage = function (eosMessage) {
+                        this.assertStateIsIn(BaseSubscriptionState.OPEN);
+                        if (eosMessage.length !== 4) {
+                            return new Error("EOS message has " + eosMessage.length + " elements (expected 4)");
+                        }
+                        var _ = eosMessage[0],
+                            statusCode = eosMessage[1],
+                            headers = eosMessage[2],
+                            info = eosMessage[3];
+                        if (typeof statusCode !== "number") {
+                            return new Error("Invalid EOS Status Code");
+                        }
+                        if (typeof headers !== "object" || Array.isArray(headers)) {
+                            return new Error("Invalid EOS ElementsHeaders");
+                        }
+                        this.state = BaseSubscriptionState.ENDING;
+                        return new network_1.ErrorResponse(statusCode, headers, info);
+                    };
+                    /******
+                    Utility methods
+                    ******/
+                    /**
+                    * Asserts whether this subscription falls in one of the expected states and logs a warning if it's not.
+                    * @param validStates Array of possible states this subscription could be in.
+                    */
+                    BaseSubscription.prototype.assertStateIsIn = function () {
+                        var _this = this;
+                        var validStates = [];
+                        for (var _i = 0; _i < arguments.length; _i++) {
+                            validStates[_i] = arguments[_i];
+                        }
+                        var stateIsValid = validStates.some(function (validState) {
+                            return validState === _this.state;
+                        });
+                        if (!stateIsValid) {
+                            var expectedStates = validStates.map(function (state) {
+                                return BaseSubscriptionState[state];
+                            }).join(', ');
+                            var actualState = BaseSubscriptionState[this.state];
+                            this.logger.warn("Expected this.state to be one of [" + expectedStates + "] but it is " + actualState);
+                        }
+                    };
+                    /**
+                    * Check if a single subscription message is in the right format.
+                    * @param message The message to check.
+                    * @returns null or error if the message is wrong.
+                    */
+                    BaseSubscription.prototype.verifyMessage = function (message) {
+                        if (this.gotEOS) {
+                            return new Error("Got another message after EOS message");
+                        }
+                        if (!Array.isArray(message)) {
+                            return new Error("Message is not an array");
+                        }
+                        if (message.length < 1) {
+                            return new Error("Message is empty array");
+                        }
+                    };
+                    return BaseSubscription;
+                }();
+                exports.BaseSubscription = BaseSubscription;
+
+                /***/
+            },
+            /* 2 */
+            /***/function (module, exports, __webpack_require__) {
+
+                "use strict";
+
+                Object.defineProperty(exports, "__esModule", { value: true });
+                var network_1 = __webpack_require__(0);
+                exports.createRetryStrategyOptionsOrDefault = function (options) {
+                    var initialTimeoutMillis = options.initialTimeoutMillis || 1000;
+                    var maxTimeoutMillis = options.maxTimeoutMillis || 5000;
+                    var limit = -1;
+                    if (options.limit != undefined && options.limit != null) {
+                        limit = options.limit;
+                    }
+                    var increaseTimeout;
+                    if (options.increaseTimeout) {
+                        increaseTimeout = options.increaseTimeout;
+                    } else {
+                        increaseTimeout = function (currentTimeout) {
+                            if (currentTimeout * 2 > maxTimeoutMillis) {
+                                return maxTimeoutMillis;
+                            } else {
+                                return currentTimeout * 2;
+                            }
+                        };
+                    }
+                    return {
+                        initialTimeoutMillis: initialTimeoutMillis,
+                        maxTimeoutMillis: maxTimeoutMillis,
+                        limit: limit,
+                        increaseTimeout: increaseTimeout
+                    };
+                };
+                var Retry = /** @class */function () {
+                    function Retry(waitTimeMillis) {
+                        this.waitTimeMillis = waitTimeMillis;
+                    }
+                    return Retry;
+                }();
+                exports.Retry = Retry;
+                var DoNotRetry = /** @class */function () {
+                    function DoNotRetry(error) {
+                        this.error = error;
+                    }
+                    return DoNotRetry;
+                }();
+                exports.DoNotRetry = DoNotRetry;
+                var requestMethodIsSafe = function (method) {
+                    method = method.toUpperCase();
+                    return method === 'GET' || method === 'HEAD' || method === 'OPTIONS' || method === 'SUBSCRIBE';
+                };
+                var RetryResolution = /** @class */function () {
+                    function RetryResolution(options, logger, retryUnsafeRequests) {
                         this.options = options;
+                        this.logger = logger;
+                        this.retryUnsafeRequests = retryUnsafeRequests;
+                        this.currentRetryCount = 0;
+                        this.initialTimeoutMillis = options.initialTimeoutMillis;
+                        this.maxTimeoutMillis = options.maxTimeoutMillis;
+                        this.limit = options.limit;
+                        this.increaseTimeoutFunction = options.increaseTimeout;
+                        this.currentBackoffMillis = this.initialTimeoutMillis;
+                    }
+                    RetryResolution.prototype.attemptRetry = function (error) {
+                        this.logger.verbose(this.constructor.name + ":  Error received", error);
+                        if (this.currentRetryCount >= this.limit && this.limit >= 0) {
+                            this.logger.verbose(this.constructor.name + ":  Retry count is over the maximum limit: " + this.limit);
+                            return new DoNotRetry(error);
+                        }
+                        if (error instanceof network_1.ErrorResponse && error.headers['Retry-After']) {
+                            this.logger.verbose(this.constructor.name + ":  Retry-After header is present, retrying in " + error.headers['Retry-After']);
+                            return new Retry(parseInt(error.headers['Retry-After']) * 1000);
+                        }
+                        if (error instanceof network_1.NetworkError || error instanceof network_1.ErrorResponse && requestMethodIsSafe(error.headers["Request-Method"]) || this.retryUnsafeRequests) {
+                            return this.shouldSafeRetry(error);
+                        }
+                        if (error instanceof network_1.NetworkError) return this.shouldSafeRetry(error);
+                        this.logger.verbose(this.constructor.name + ": Error is not retryable", error);
+                        return new DoNotRetry(error);
+                    };
+                    RetryResolution.prototype.shouldSafeRetry = function (error) {
+                        if (error instanceof network_1.NetworkError) {
+                            this.logger.verbose(this.constructor.name + ": It's a Network Error, will retry", error);
+                            return new Retry(this.calulateMillisToRetry());
+                        } else if (error instanceof network_1.ErrorResponse) {
+                            if (error.statusCode >= 500 && error.statusCode < 600) {
+                                this.logger.verbose(this.constructor.name + ": Error 5xx, will retry");
+                                return new Retry(this.calulateMillisToRetry());
+                            }
+                        }
+                        this.logger.verbose(this.constructor.name + ": Error is not retryable", error);
+                        return new DoNotRetry(error);
+                    };
+                    RetryResolution.prototype.calulateMillisToRetry = function () {
+                        this.currentBackoffMillis = this.increaseTimeoutFunction(this.currentBackoffMillis);
+                        this.logger.verbose(this.constructor.name + ": Retrying in " + this.currentBackoffMillis + "ms");
+                        return this.currentBackoffMillis;
+                    };
+                    return RetryResolution;
+                }();
+                exports.RetryResolution = RetryResolution;
+
+                /***/
+            },
+            /* 3 */
+            /***/function (module, exports, __webpack_require__) {
+
+                "use strict";
+
+                Object.defineProperty(exports, "__esModule", { value: true });
+                var retrying_subscription_1 = __webpack_require__(7);
+                var resuming_subscription_1 = __webpack_require__(6);
+                var request_1 = __webpack_require__(5);
+                var subscription_1 = __webpack_require__(14);
+                var base_subscription_1 = __webpack_require__(1);
+                var token_providing_subscription_1 = __webpack_require__(8);
+                var transports_1 = __webpack_require__(9);
+                var subscribe_strategy_1 = __webpack_require__(13);
+                var BaseClient = /** @class */function () {
+                    function BaseClient(options) {
+                        var _this = this;
+                        this.options = options;
+                        this.xhrConstructor = function (path) {
+                            return function (headers) {
+                                var requestOptions = {
+                                    method: "SUBSCRIBE",
+                                    path: path,
+                                    headers: headers
+                                };
+                                return _this.createXHR(_this.baseURL, requestOptions);
+                            };
+                        };
                         var host = options.host.replace(/\/$/, '');
                         this.baseURL = (options.encrypted !== false ? "https" : "http") + "://" + host;
-                        this.XMLHttpRequest = options.XMLHttpRequest || window.XMLHttpRequest;
-                        this.logger = options.logger || new logger_1.ConsoleLogger();
+                        this.logger = options.logger;
                     }
-                    BaseClient.prototype.request = function (options) {
-                        var xhr = this.createXHR(this.baseURL, options);
-                        //TODO: add retrying
-                        return new Promise(function (resolve, reject) {
-                            xhr.onreadystatechange = function () {
-                                if (xhr.readyState === 4) {
-                                    if (xhr.status === 200) {
-                                        resolve(xhr.responseText);
-                                    } else {
-                                        reject(ErrorResponse.fromXHR(xhr));
-                                    }
+                    BaseClient.prototype.request = function (options, tokenProvider, tokenParams) {
+                        var _this = this;
+                        if (tokenProvider) {
+                            return tokenProvider.fetchToken(tokenParams).then(function (token) {
+                                options.headers['Authorization'] = "Bearer " + token;
+                                return request_1.executeNetworkRequest(function () {
+                                    return _this.createXHR(_this.baseURL, options);
+                                }, options);
+                            }).catch(function (error) {
+                                console.log(error);
+                            });
+                        } else {
+                            return request_1.executeNetworkRequest(function () {
+                                return _this.createXHR(_this.baseURL, options);
+                            }, options);
+                        }
+                    };
+                    BaseClient.prototype.subscribeResuming = function (path, headers, listeners, retryStrategyOptions, initialEventId, tokenProvider) {
+                        var requestFactory = this.xhrConstructor(path);
+                        listeners = subscription_1.replaceMissingListenersWithNoOps(listeners);
+                        var subscribeStrategyListeners = subscribe_strategy_1.subscribeStrategyListenersFromSubscriptionListeners(listeners);
+                        var subscriptionStrategy = resuming_subscription_1.createResumingStrategy(retryStrategyOptions, initialEventId, token_providing_subscription_1.createTokenProvidingStrategy(tokenProvider, transports_1.createH2TransportStrategy(requestFactory, this.logger), this.logger), this.logger);
+                        var opened = false;
+                        return subscriptionStrategy({
+                            onOpen: function (headers) {
+                                if (!opened) {
+                                    opened = true;
+                                    listeners.onOpen(headers);
                                 }
-                            };
-                            xhr.send(JSON.stringify(options.body));
-                        });
+                                listeners.onSubscribe();
+                            },
+                            onRetrying: subscribeStrategyListeners.onRetrying,
+                            onError: subscribeStrategyListeners.onError,
+                            onEvent: subscribeStrategyListeners.onEvent,
+                            onEnd: subscribeStrategyListeners.onEnd
+                        }, headers);
                     };
-                    BaseClient.prototype.newStatelessSubscription = function (subOptions) {
+                    BaseClient.prototype.subscribeNonResuming = function (path, headers, listeners, retryStrategyOptions, tokenProvider) {
                         var _this = this;
-                        var method = "SUBSCRIBE";
-                        if (!subOptions.retryStrategy) {
-                            subOptions.retryStrategy = new retry_strategy_1.ExponentialBackoffRetryStrategy({
-                                logger: this.logger,
-                                requestMethod: method
-                            });
-                        }
-                        return new stateless_subscription_1.StatelessSubscription(function () {
-                            return _this.createXHR(_this.baseURL, {
-                                method: method,
-                                path: subOptions.path,
-                                headers: {},
-                                body: null
-                            });
-                        }, subOptions);
-                    };
-                    BaseClient.prototype.newResumableSubscription = function (subOptions) {
-                        var _this = this;
-                        var method = "SUBSCRIBE";
-                        if (!subOptions.retryStrategy) {
-                            subOptions.retryStrategy = new retry_strategy_1.ExponentialBackoffRetryStrategy({
-                                logger: this.logger,
-                                requestMethod: method
-                            });
-                        }
-                        return new resumable_subscription_1.ResumableSubscription(function () {
-                            return _this.createXHR(_this.baseURL, {
-                                method: method,
-                                path: subOptions.path,
-                                headers: {},
-                                body: null
-                            });
-                        }, subOptions);
+                        var xhrFactory = this.xhrConstructor(path);
+                        listeners = subscription_1.replaceMissingListenersWithNoOps(listeners);
+                        var subscribeStrategyListeners = subscribe_strategy_1.subscribeStrategyListenersFromSubscriptionListeners(listeners);
+                        var subscriptionConstructor = function (onOpen, onError, onEvent, onEnd, headers) {
+                            return new base_subscription_1.BaseSubscription(xhrFactory(headers), _this.logger, onOpen, onError, onEvent, onEnd);
+                        };
+                        var subscriptionStrategy = retrying_subscription_1.createRetryingStrategy(retryStrategyOptions, token_providing_subscription_1.createTokenProvidingStrategy(tokenProvider, transports_1.createH2TransportStrategy(xhrFactory, this.logger), this.logger), this.logger);
+                        var opened = false;
+                        return subscriptionStrategy({
+                            onOpen: function (headers) {
+                                if (!opened) {
+                                    opened = true;
+                                    listeners.onOpen(headers);
+                                }
+                                listeners.onSubscribe();
+                            },
+                            onRetrying: subscribeStrategyListeners.onRetrying,
+                            onError: subscribeStrategyListeners.onError,
+                            onEvent: subscribeStrategyListeners.onEvent,
+                            onEnd: subscribeStrategyListeners.onEnd
+                        }, headers);
                     };
                     BaseClient.prototype.createXHR = function (baseURL, options) {
-                        var XMLHttpRequest = this.XMLHttpRequest;
+                        var XMLHttpRequest = window.XMLHttpRequest;
                         var xhr = new XMLHttpRequest();
                         var path = options.path.replace(/^\/+/, "");
                         var endpoint = baseURL + "/" + path;
@@ -266,7 +628,7 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
 
                 /***/
             },
-            /* 1 */
+            /* 4 */
             /***/function (module, exports, __webpack_require__) {
 
                 "use strict";
@@ -285,7 +647,7 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
                  * Logs only calls that are at or above the threshold (verbose/debug/info/warn/error)
                  * If error is passed, it will append the message to the error object.
                  */
-                var ConsoleLogger = function () {
+                var ConsoleLogger = /** @class */function () {
                     function ConsoleLogger(threshold) {
                         if (threshold === void 0) {
                             threshold = 2;
@@ -323,7 +685,7 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
                     return ConsoleLogger;
                 }();
                 exports.ConsoleLogger = ConsoleLogger;
-                var EmptyLogger = function () {
+                var EmptyLogger = /** @class */function () {
                     function EmptyLogger() {}
                     EmptyLogger.prototype.verbose = function (message, error) {};
                     
@@ -341,344 +703,36 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
 
                 /***/
             },
-            /* 2 */
-            /***/function (module, exports, __webpack_require__) {
-
-                "use strict";
-
-                Object.defineProperty(exports, "__esModule", { value: true });
-                /**
-                 * Wrapper around the token provider that contains a retry strategy
-                 * TODO: test
-                 * Currently not used anywhere
-                 */
-                var RetryingTokenProvider = function () {
-                    function RetryingTokenProvider(baseTokenProvider, retryStrategy) {
-                        this.baseTokenProvider = baseTokenProvider;
-                        this.retryStrategy = retryStrategy;
-                    }
-                    RetryingTokenProvider.prototype.fetchToken = function () {
-                        return this.tryFetching();
-                    };
-                    RetryingTokenProvider.prototype.invalidateToken = function (token) {
-                        this.baseTokenProvider.invalidateToken(token);
-                    };
-                    RetryingTokenProvider.prototype.tryFetching = function () {
-                        var _this = this;
-                        return new Promise(function (resolve, reject) {
-                            _this.baseTokenProvider.fetchToken().then(function (token) {
-                                resolve(token);
-                            }).catch(function (error) {
-                                _this.retryStrategy.checkIfRetryable(error).then(function () {
-                                    _this.tryFetching();
-                                }).catch(function (error) {
-                                    reject(error);
-                                });
-                            });
-                        });
-                    };
-                    return RetryingTokenProvider;
-                }();
-                exports.RetryingTokenProvider = RetryingTokenProvider;
-                /**
-                 * No-op token provider. Fetches undefined so we can more easily replace it.
-                 * Never fails.
-                 */
-                var NoOpTokenProvider = function () {
-                    function NoOpTokenProvider() {}
-                    NoOpTokenProvider.prototype.fetchToken = function () {
-                        return new Promise(function (resolve) {
-                            resolve(undefined);
-                        });
-                    };
-                    NoOpTokenProvider.prototype.invalidateToken = function (token) {};
-                    return NoOpTokenProvider;
-                }();
-                exports.NoOpTokenProvider = NoOpTokenProvider;
-                /**
-                 * A token provider that always returns the same token. Can be used for debugging purposes.
-                 */
-                var FixedTokenProvider = function () {
-                    function FixedTokenProvider(jwt) {
-                        this.jwt = jwt;
-                    }
-                    FixedTokenProvider.prototype.fetchToken = function () {
-                        var _this = this;
-                        return new Promise(function (resolve) {
-                            resolve(_this.jwt);
-                        });
-                    };
-                    FixedTokenProvider.prototype.invalidateToken = function (token) {};
-                    return FixedTokenProvider;
-                }();
-                exports.FixedTokenProvider = FixedTokenProvider;
-
-                /***/
-            },
-            /* 3 */
-            /***/function (module, exports, __webpack_require__) {
-
-                "use strict";
-
-                Object.defineProperty(exports, "__esModule", { value: true });
-                var token_provider_1 = __webpack_require__(2);
-                var base_subscription_1 = __webpack_require__(6);
-                var ResumableSubscription = function () {
-                    function ResumableSubscription(xhrSource, options) {
-                        this.xhrSource = xhrSource;
-                        this.options = options;
-                        this.lastEventIdReceived = options.lastEventId;
-                        this.logger = options.logger;
-                        this.retryStrategy = options.retryStrategy;
-                        if (!this.options.tokenProvider) this.options.tokenProvider = new token_provider_1.NoOpTokenProvider();
-                        this.options = base_subscription_1.replaceUnimplementedListenersWithNoOps(options);
-                    }
-                    ResumableSubscription.prototype.tryNow = function () {
-                        var _this = this;
-                        var newXhr = this.xhrSource();
-                        if (this.lastEventIdReceived) {
-                            newXhr.setRequestHeader("Last-Event-Id", this.lastEventIdReceived);
-                        }
-                        this.options.tokenProvider.fetchToken().then(function (token) {
-                            _this.baseSubscription = new base_subscription_1.BaseSubscription(newXhr, {
-                                path: _this.options.path,
-                                headers: _this.options.headers,
-                                jwt: token,
-                                onOpen: function () {
-                                    _this.options.onOpen();
-                                    _this.retryStrategy.reset(); //We need to reset the counter once the connection has been re-established.
-                                },
-                                onEvent: function (event) {
-                                    _this.options.onEvent(event);
-                                    _this.lastEventIdReceived = event.eventId;
-                                },
-                                onEnd: _this.options.onEnd,
-                                onError: function (error) {
-                                    _this.retryStrategy.checkIfRetryable(error).then(function () {
-                                        if (_this.options.onRetry) {
-                                            _this.options.onRetry();
-                                        } else {
-                                            _this.tryNow();
-                                        }
-                                    }).catch(function (error) {
-                                        _this.options.onError(error);
-                                    });
-                                },
-                                logger: _this.logger
-                            });
-                            _this.baseSubscription.open();
-                        }).catch(function (error) {
-                            _this.options.onError(error);
-                        });
-                    };
-                    ResumableSubscription.prototype.open = function () {
-                        this.tryNow();
-                    };
-                    ResumableSubscription.prototype.unsubscribe = function () {
-                        if (!this.baseSubscription) {
-                            throw new Error("Subscription doesn't exist! Have you called open()?");
-                        }
-                        this.retryStrategy.cancel();
-                        this.baseSubscription.unsubscribe(); // We'll get onEnd and bubble this up
-                    };
-                    return ResumableSubscription;
-                }();
-                exports.ResumableSubscription = ResumableSubscription;
-
-                /***/
-            },
-            /* 4 */
-            /***/function (module, exports, __webpack_require__) {
-
-                "use strict";
-
-                Object.defineProperty(exports, "__esModule", { value: true });
-                var base_client_1 = __webpack_require__(0);
-                var Retry = function () {
-                    function Retry(waitTimeMillis) {
-                        this.waitTimeMillis = waitTimeMillis;
-                    }
-                    return Retry;
-                }();
-                exports.Retry = Retry;
-                var DoNotRetry = function () {
-                    function DoNotRetry(error) {
-                        this.error = error;
-                    }
-                    return DoNotRetry;
-                }();
-                exports.DoNotRetry = DoNotRetry;
-                var ExponentialBackoffRetryStrategy = function () {
-                    function ExponentialBackoffRetryStrategy(options) {
-                        this.retryUnsafeRequests = false;
-                        this.limit = -1;
-                        this.retryCount = 0;
-                        this.maxBackoffMillis = 5000;
-                        this.defaultBackoffMillis = 1000;
-                        this.currentBackoffMillis = this.defaultBackoffMillis;
-                        this.pendingTimeouts = new Set();
-                        this.requestMethod = options.requestMethod;
-                        this.logger = options.logger;
-                        if (options.retryUnsafeRequests) this.retryUnsafeRequests = options.retryUnsafeRequests;
-                        //Backoff limits
-                        if (options.limit) this.limit = options.limit;
-                        if (options.initialBackoffMillis) {
-                            this.currentBackoffMillis = options.initialBackoffMillis;
-                            this.defaultBackoffMillis = options.initialBackoffMillis;
-                        }
-                        if (options.maxBackoffMillis) this.maxBackoffMillis = options.maxBackoffMillis;
-                    }
-                    ExponentialBackoffRetryStrategy.prototype.checkIfRetryable = function (error) {
-                        var _this = this;
-                        return new Promise(function (resolve, reject) {
-                            var shouldRetry = _this.shouldRetry(error);
-                            if (shouldRetry instanceof DoNotRetry) {
-                                reject(error);
-                            } else if (shouldRetry instanceof Retry) {
-                                _this.retryCount += 1;
-                                var timeout_1 = window.setTimeout(function () {
-                                    _this.pendingTimeouts.delete(timeout_1);
-                                    resolve();
-                                }, shouldRetry.waitTimeMillis);
-                                _this.pendingTimeouts.add(timeout_1);
-                            }
-                        });
-                    };
-                    ExponentialBackoffRetryStrategy.prototype.reset = function () {
-                        this.retryCount = 0;
-                        this.currentBackoffMillis = this.defaultBackoffMillis;
-                    };
-                    ExponentialBackoffRetryStrategy.prototype.cancel = function () {
-                        var _this = this;
-                        this.pendingTimeouts.forEach(function (timeout) {
-                            window.clearTimeout(timeout);
-                            _this.pendingTimeouts.delete(timeout);
-                        });
-                    };
-                    ExponentialBackoffRetryStrategy.prototype.requestMethodIsSafe = function () {
-                        switch (this.requestMethod) {
-                            case 'GET':
-                            case 'HEAD':
-                            case 'OPTIONS':
-                            case 'SUBSCRIBE':
-                                return true;
-                            default:
-                                return false;
-                        }
-                    };
-                    ExponentialBackoffRetryStrategy.prototype.shouldRetry = function (error) {
-                        this.logger.verbose(this.constructor.name + ":  Error received", error);
-                        if (this.retryCount >= this.limit && this.limit >= 0) {
-                            this.logger.verbose(this.constructor.name + ":  Retry count is over the maximum limit: " + this.limit);
-                            return new DoNotRetry(error);
-                        }
-                        if (error instanceof base_client_1.ErrorResponse && error.headers['Retry-After']) {
-                            this.logger.verbose(this.constructor.name + ":  Retry-After header is present, retrying in " + error.headers['Retry-After']);
-                            return new Retry(parseInt(error.headers['Retry-After']) * 1000);
-                        }
-                        if (error instanceof base_client_1.NetworkError || this.requestMethodIsSafe() || this.retryUnsafeRequests) {
-                            return this.shouldSafeRetry(error);
-                        }
-                        this.logger.verbose(this.constructor.name + ": Error is not retryable", error);
-                        return new DoNotRetry(error);
-                    };
-                    ExponentialBackoffRetryStrategy.prototype.shouldSafeRetry = function (error) {
-                        if (error instanceof base_client_1.NetworkError) {
-                            this.logger.verbose(this.constructor.name + ": It's a Network Error, will retry", error);
-                            return new Retry(this.calulateMillisToRetry());
-                        }
-                        if (error instanceof base_client_1.ErrorResponse) {
-                            if (error.statusCode >= 500 && error.statusCode < 600) {
-                                this.logger.verbose(this.constructor.name + ": Error 5xx, will retry");
-                                return new Retry(this.calulateMillisToRetry());
-                            }
-                            if (error.statusCode === 401) {
-                                this.logger.verbose(this.constructor.name + ": Error 401 - probably expired token, retrying immediately");
-                                return new Retry(0); //Token expired - can retry immediately
-                            }
-                        }
-                        this.logger.verbose(this.constructor.name + ": Error is not retryable", error);
-                        return new DoNotRetry(error);
-                    };
-                    ExponentialBackoffRetryStrategy.prototype.calulateMillisToRetry = function () {
-                        if (this.currentBackoffMillis >= this.maxBackoffMillis || this.currentBackoffMillis * 2 >= this.maxBackoffMillis) {
-                            this.currentBackoffMillis = this.maxBackoffMillis;
-                        } else if (this.retryCount > 0) {
-                            this.currentBackoffMillis = this.currentBackoffMillis * 2;
-                        }
-                        this.logger.verbose("Retrying in " + this.currentBackoffMillis + "ms");
-                        return this.currentBackoffMillis;
-                    };
-                    return ExponentialBackoffRetryStrategy;
-                }();
-                exports.ExponentialBackoffRetryStrategy = ExponentialBackoffRetryStrategy;
-
-                /***/
-            },
             /* 5 */
             /***/function (module, exports, __webpack_require__) {
 
                 "use strict";
 
                 Object.defineProperty(exports, "__esModule", { value: true });
-                var token_provider_1 = __webpack_require__(2);
-                var base_subscription_1 = __webpack_require__(6);
-                // pattern of callbacks: ((onOpening (onOpen onEvent*)?)? (onError|onEnd)) | onError
-                var StatelessSubscription = function () {
-                    function StatelessSubscription(xhrSource, options) {
-                        this.xhrSource = xhrSource;
-                        this.options = options;
-                        this.logger = options.logger;
-                        if (!this.options.tokenProvider) this.options.tokenProvider = new token_provider_1.NoOpTokenProvider();
-                        this.options = base_subscription_1.replaceUnimplementedListenersWithNoOps(options);
-                        this.retryStrategy = options.retryStrategy;
-                    }
-                    StatelessSubscription.prototype.tryNow = function () {
-                        var _this = this;
-                        var newXhr = this.xhrSource();
-                        this.options.tokenProvider.fetchToken().then(function (token) {
-                            _this.baseSubscription = new base_subscription_1.BaseSubscription(newXhr, {
-                                path: _this.options.path,
-                                headers: _this.options.headers,
-                                jwt: token,
-                                onOpen: function () {
-                                    _this.options.onOpen();
-                                    _this.retryStrategy.reset(); //We need to reset the counter once the connection has been re-established.
-                                },
-                                onEvent: _this.options.onEvent,
-                                onEnd: _this.options.onEnd,
-                                onError: function (error) {
-                                    _this.retryStrategy.checkIfRetryable(error).then(function () {
-                                        _this.logger.verbose("Then!");
-                                        if (_this.options.onRetry) {
-                                            _this.options.onRetry();
-                                        } else {
-                                            _this.tryNow();
-                                        }
-                                    }).catch(function (error) {
-                                        _this.options.onError(error);
-                                    });
-                                },
-                                logger: _this.logger
-                            });
-                            _this.baseSubscription.open();
-                        }).catch(function (error) {
-                            _this.options.onError(error);
+                var network_1 = __webpack_require__(0);
+                var PCancelable = __webpack_require__(11);
+                function executeNetworkRequest(createXhr, options) {
+                    var cancelablePromise = new PCancelable(function (onCancel, resolve, reject) {
+                        var xhr = createXhr();
+                        onCancel(function () {
+                            xhr.abort();
                         });
-                    };
-                    StatelessSubscription.prototype.open = function () {
-                        this.tryNow();
-                    };
-                    StatelessSubscription.prototype.unsubscribe = function () {
-                        if (!this.baseSubscription) {
-                            throw new Error("Subscription doesn't exist! Have you called open()?");
-                        }
-                        this.retryStrategy.cancel();
-                        this.baseSubscription.unsubscribe(); // We'll get onEnd and bubble this up
-                    };
-                    return StatelessSubscription;
-                }();
-                exports.StatelessSubscription = StatelessSubscription;
+                        xhr.onreadystatechange = function () {
+                            if (xhr.readyState === 4) {
+                                if (xhr.status === 200) {
+                                    resolve(xhr.response);
+                                } else if (xhr.status !== 0) {
+                                    reject(network_1.ErrorResponse.fromXHR(xhr));
+                                } else {
+                                    reject(new network_1.NetworkError("No Connection"));
+                                }
+                            }
+                        };
+                        xhr.send(JSON.stringify(options.body));
+                    });
+                    return cancelablePromise;
+                }
+                exports.executeNetworkRequest = executeNetworkRequest;
 
                 /***/
             },
@@ -688,253 +742,159 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
                 "use strict";
 
                 Object.defineProperty(exports, "__esModule", { value: true });
-                var base_client_1 = __webpack_require__(0);
-                var SubscriptionState;
-                (function (SubscriptionState) {
-                    SubscriptionState[SubscriptionState["UNOPENED"] = 0] = "UNOPENED";
-                    SubscriptionState[SubscriptionState["OPENING"] = 1] = "OPENING";
-                    SubscriptionState[SubscriptionState["OPEN"] = 2] = "OPEN";
-                    SubscriptionState[SubscriptionState["ENDING"] = 3] = "ENDING";
-                    SubscriptionState[SubscriptionState["ENDED"] = 4] = "ENDED"; // called onEnd() or onError(err)
-                })(SubscriptionState = exports.SubscriptionState || (exports.SubscriptionState = {}));
-                /**
-                * Allows avoiding making null check every. Single. Time.
-                * @param options the options that come in
-                * @returns the mutated options
-                * TODO: should this be cloned instead?
-                */
-                function replaceUnimplementedListenersWithNoOps(options) {
-                    if (!options.onOpen) options.onOpen = function () {};
-                    if (!options.onEvent) options.onEvent = function (event) {};
-                    if (!options.onEnd) options.onEnd = function () {};
-                    if (!options.onError) options.onError = function (error) {};
-                    return options;
-                }
-                exports.replaceUnimplementedListenersWithNoOps = replaceUnimplementedListenersWithNoOps;
-                var BaseSubscription = function () {
-                    function BaseSubscription(xhr, options) {
-                        var _this = this;
-                        this.xhr = xhr;
-                        this.options = options;
-                        this.state = SubscriptionState.UNOPENED;
-                        this.lastNewlineIndex = 0;
-                        /******
-                        Message parsing
-                        ******/
-                        this.gotEOS = false;
-                        //Apply headers    
-                        for (var key in options.headers) {
-                            xhr.setRequestHeader(key, options.headers[key]);
-                        }
-                        xhr.onreadystatechange = function () {
-                            switch (_this.xhr.readyState) {
-                                case base_client_1.XhrReadyState.UNSENT:
-                                case base_client_1.XhrReadyState.OPENED:
-                                case base_client_1.XhrReadyState.HEADERS_RECEIVED:
-                                    _this.assertStateIsIn(SubscriptionState.OPENING);
-                                    break;
-                                case base_client_1.XhrReadyState.LOADING:
-                                    _this.onLoading();
-                                    break;
-                                case base_client_1.XhrReadyState.DONE:
-                                    _this.onDone();
-                                    break;
-                            }
-                        };
-                    }
-                    BaseSubscription.prototype.open = function () {
-                        if (this.state !== SubscriptionState.UNOPENED) {
-                            throw new Error("Called .open() on Subscription object in unexpected state: " + this.state);
-                        }
-                        this.state = SubscriptionState.OPENING;
-                        if (this.options.jwt) {
-                            this.xhr.setRequestHeader("authorization", "Bearer " + this.options.jwt);
-                        }
-                        this.xhr.send();
-                    };
-                    BaseSubscription.prototype.unsubscribe = function () {
-                        this.state = SubscriptionState.ENDED;
-                        this.xhr.abort();
-                        this.options.onEnd();
-                    };
-                    BaseSubscription.prototype.onLoading = function () {
-                        this.assertStateIsIn(SubscriptionState.OPENING, SubscriptionState.OPEN, SubscriptionState.ENDING);
-                        if (this.xhr.status === 200) {
-                            //Check if we just transitioned to the open state
-                            if (this.state === SubscriptionState.OPENING) {
-                                this.state = SubscriptionState.OPEN;
-                                this.options.onOpen();
-                            }
-                            this.assertStateIsIn(SubscriptionState.OPEN);
-                            var err = this.onChunk(); // might transition our state from OPEN -> ENDING
-                            this.assertStateIsIn(SubscriptionState.OPEN, SubscriptionState.ENDING);
-                            if (err) {
-                                this.state = SubscriptionState.ENDED;
-                                if (err.statusCode != 204) {
-                                    this.options.onError(err);
+                var retry_strategy_1 = __webpack_require__(2);
+                var network_1 = __webpack_require__(0);
+                exports.createResumingStrategy = function (retryOptions, initialEventId, nextSubscribeStrategy, logger) {
+                    retryOptions = retry_strategy_1.createRetryStrategyOptionsOrDefault(retryOptions);
+                    var retryResolution = new retry_strategy_1.RetryResolution(retryOptions, logger);
+                    var ResumingSubscription = /** @class */function () {
+                        function ResumingSubscription(listeners, headers) {
+                            var _this = this;
+                            this.onTransition = function (newState) {
+                                _this.state = newState;
+                            };
+                            this.unsubscribe = function () {
+                                _this.state.unsubscribe();
+                            };
+                            var OpeningSubscriptionState = /** @class */function () {
+                                function OpeningSubscriptionState(onTransition) {
+                                    var _this = this;
+                                    this.onTransition = onTransition;
+                                    var lastEventId = initialEventId;
+                                    logger.verbose("ResumingSubscription: transitioning to OpeningSubscriptionState");
+                                    if (lastEventId) {
+                                        headers["Last-Event-Id"] = lastEventId;
+                                        logger.verbose("ResumingSubscription: initialEventId is " + lastEventId);
+                                    }
+                                    this.underlyingSubscription = nextSubscribeStrategy({
+                                        onOpen: function (headers) {
+                                            onTransition(new OpenSubscriptionState(headers, _this.underlyingSubscription, onTransition));
+                                        },
+                                        onRetrying: listeners.onRetrying,
+                                        onError: function (error) {
+                                            onTransition(new ResumingSubscriptionState(error, lastEventId, onTransition));
+                                        },
+                                        onEvent: function (event) {
+                                            lastEventId = event.eventId;
+                                            listeners.onEvent(event);
+                                        },
+                                        onEnd: function (error) {
+                                            onTransition(new EndedSubscriptionState(error));
+                                        }
+                                    }, headers);
                                 }
-                                // Because we abort()ed, we will get no more calls to our onreadystatechange handler,
-                                // and so we will not call the event handler again.
-                                // Finish with options.onError instead of the options.onEnd.
-                            } else {
-                                    // We consumed some response text, and all's fine. We expect more text.
+                                OpeningSubscriptionState.prototype.unsubscribe = function () {
+                                    this.onTransition(new EndingSubscriptionState());
+                                    this.underlyingSubscription.unsubscribe();
+                                };
+                                return OpeningSubscriptionState;
+                            }();
+                            var OpenSubscriptionState = /** @class */function () {
+                                function OpenSubscriptionState(headers, underlyingSubscription, onTransition) {
+                                    this.underlyingSubscription = underlyingSubscription;
+                                    this.onTransition = onTransition;
+                                    logger.verbose("ResumingSubscription: transitioning to OpenSubscriptionState");
+                                    listeners.onOpen(headers);
                                 }
-                        }
-                    };
-                    BaseSubscription.prototype.onDone = function () {
-                        if (this.xhr.status === 200) {
-                            if (this.state === SubscriptionState.OPENING) {
-                                this.state = SubscriptionState.OPEN;
-                                this.options.onOpen();
-                            }
-                            this.assertStateIsIn(SubscriptionState.OPEN, SubscriptionState.ENDING);
-                            var err = this.onChunk();
-                            if (err) {
-                                this.state = SubscriptionState.ENDED;
-                                if (err.statusCode === 204) {
-                                    this.options.onEnd();
-                                } else {
-                                    this.options.onError(err);
+                                OpenSubscriptionState.prototype.unsubscribe = function () {
+                                    this.onTransition(new EndingSubscriptionState());
+                                    this.underlyingSubscription.unsubscribe();
+                                };
+                                return OpenSubscriptionState;
+                            }();
+                            var ResumingSubscriptionState = /** @class */function () {
+                                function ResumingSubscriptionState(error, lastEventId, onTransition) {
+                                    var _this = this;
+                                    this.onTransition = onTransition;
+                                    logger.verbose("ResumingSubscription: transitioning to ResumingSubscriptionState");
+                                    var executeSubscriptionOnce = function (error, lastEventId) {
+                                        listeners.onRetrying();
+                                        var resolveError = function (error) {
+                                            if (error instanceof network_1.ErrorResponse) {
+                                                error.headers["Request-Method"] = "SUBSCRIBE";
+                                            }
+                                            return retryResolution.attemptRetry(error);
+                                        };
+                                        var errorResolution = resolveError(error);
+                                        if (errorResolution instanceof retry_strategy_1.Retry) {
+                                            _this.timeout = window.setTimeout(function () {
+                                                executeNextSubscribeStrategy(lastEventId);
+                                            }, errorResolution.waitTimeMillis);
+                                        } else {
+                                            onTransition(new FailedSubscriptionState(error));
+                                        }
+                                    };
+                                    var executeNextSubscribeStrategy = function (lastEventId) {
+                                        logger.verbose("ResumingSubscription: trying to re-establish the subscription");
+                                        if (lastEventId) {
+                                            logger.verbose("ResumingSubscription: lastEventId: " + lastEventId);
+                                            headers["Last-Event-Id"] = lastEventId;
+                                        }
+                                        _this.underlyingSubscription = nextSubscribeStrategy({
+                                            onOpen: function (headers) {
+                                                onTransition(new OpenSubscriptionState(headers, _this.underlyingSubscription, onTransition));
+                                            },
+                                            onRetrying: listeners.onRetrying,
+                                            onError: function (error) {
+                                                executeSubscriptionOnce(error, lastEventId);
+                                            },
+                                            onEvent: function (event) {
+                                                lastEventId = event.eventId;
+                                                listeners.onEvent(event);
+                                            },
+                                            onEnd: function (error) {
+                                                onTransition(new EndedSubscriptionState(error));
+                                            }
+                                        }, headers);
+                                    };
+                                    executeSubscriptionOnce(error, lastEventId);
                                 }
-                            } else if (this.state <= SubscriptionState.ENDING) {
-                                this.options.onError(new Error("HTTP response ended without receiving EOS message"));
-                            } else {
-                                // Stream ended normally.
-                                this.options.onEnd();
-                            }
-                        } else {
-                            this.assertStateIsIn(SubscriptionState.OPENING, SubscriptionState.OPEN, SubscriptionState.ENDED);
-                            if (this.state === SubscriptionState.ENDED) {
-                                // We aborted the request deliberately, and called onError/onEnd elsewhere.
-                                return;
-                            } else if (this.xhr.status === 0) {
-                                this.options.onError(new base_client_1.NetworkError("Connection lost."));
-                            } else {
-                                this.options.onError(base_client_1.ErrorResponse.fromXHR(this.xhr));
-                            }
-                        }
-                    };
-                    BaseSubscription.prototype.onChunk = function () {
-                        this.assertStateIsIn(SubscriptionState.OPEN);
-                        var response = this.xhr.responseText;
-                        var newlineIndex = response.lastIndexOf("\n");
-                        if (newlineIndex > this.lastNewlineIndex) {
-                            var rawEvents = response.slice(this.lastNewlineIndex, newlineIndex).split("\n");
-                            this.lastNewlineIndex = newlineIndex;
-                            for (var _i = 0, rawEvents_1 = rawEvents; _i < rawEvents_1.length; _i++) {
-                                var rawEvent = rawEvents_1[_i];
-                                if (rawEvent.length === 0) {
-                                    continue; // FIXME why? This should be a protocol error
+                                ResumingSubscriptionState.prototype.unsubscribe = function () {
+                                    this.onTransition(new EndingSubscriptionState());
+                                    window.clearTimeout(this.timeout);
+                                    this.underlyingSubscription.unsubscribe();
+                                };
+                                return ResumingSubscriptionState;
+                            }();
+                            var EndingSubscriptionState = /** @class */function () {
+                                function EndingSubscriptionState(error) {
+                                    logger.verbose("ResumingSubscription: transitioning to EndingSubscriptionState");
                                 }
-                                var data = JSON.parse(rawEvent);
-                                var err = this.onMessage(data);
-                                if (err != null) {
-                                    return err;
+                                EndingSubscriptionState.prototype.unsubscribe = function () {
+                                    throw new Error("Subscription is already ending");
+                                };
+                                return EndingSubscriptionState;
+                            }();
+                            var EndedSubscriptionState = /** @class */function () {
+                                function EndedSubscriptionState(error) {
+                                    logger.verbose("ResumingSubscription: transitioning to EndedSubscriptionState");
+                                    listeners.onEnd(error);
                                 }
-                            }
+                                EndedSubscriptionState.prototype.unsubscribe = function () {
+                                    throw new Error("Subscription has already ended");
+                                };
+                                return EndedSubscriptionState;
+                            }();
+                            var FailedSubscriptionState = /** @class */function () {
+                                function FailedSubscriptionState(error) {
+                                    logger.verbose("ResumingSubscription: transitioning to FailedSubscriptionState", error);
+                                    listeners.onError(error);
+                                }
+                                FailedSubscriptionState.prototype.unsubscribe = function () {
+                                    throw new Error("Subscription has already ended");
+                                };
+                                return FailedSubscriptionState;
+                            }();
+                            //Here we init the state transition shenaningans
+                            this.state = new OpeningSubscriptionState(this.onTransition);
                         }
+                        return ResumingSubscription;
+                    }();
+                    //All the magic in the world.
+                    return function (listeners, headers) {
+                        return new ResumingSubscription(listeners, headers);
                     };
-                    /**
-                    * Calls options.onEvent 0+ times, then returns an Error or null
-                    * Also asserts the message is formatted correctly and we're in an allowed state (not terminated).
-                    */
-                    BaseSubscription.prototype.onMessage = function (message) {
-                        this.assertStateIsIn(SubscriptionState.OPEN);
-                        this.verifyMessage(message);
-                        switch (message[0]) {
-                            case 0:
-                                return null;
-                            case 1:
-                                return this.onEventMessage(message);
-                            case 255:
-                                return this.onEOSMessage(message);
-                            default:
-                                return new Error("Unknown Message: " + JSON.stringify(message));
-                        }
-                    };
-                    // EITHER calls options.onEvent, OR returns an error
-                    BaseSubscription.prototype.onEventMessage = function (eventMessage) {
-                        this.assertStateIsIn(SubscriptionState.OPEN);
-                        if (eventMessage.length !== 4) {
-                            return new Error("Event message has " + eventMessage.length + " elements (expected 4)");
-                        }
-                        var _ = eventMessage[0],
-                            id = eventMessage[1],
-                            headers = eventMessage[2],
-                            body = eventMessage[3];
-                        if (typeof id !== "string") {
-                            return new Error("Invalid event ID in message: " + JSON.stringify(eventMessage));
-                        }
-                        if (typeof headers !== "object" || Array.isArray(headers)) {
-                            return new Error("Invalid event headers in message: " + JSON.stringify(eventMessage));
-                        }
-                        this.options.onEvent({ eventId: id, headers: headers, body: body });
-                    };
-                    /**
-                    * EOS message received. Sets subscription state to Ending and returns an error with given status code
-                    * @param eosMessage final message of the subscription
-                    */
-                    BaseSubscription.prototype.onEOSMessage = function (eosMessage) {
-                        this.assertStateIsIn(SubscriptionState.OPEN);
-                        if (eosMessage.length !== 4) {
-                            return new Error("EOS message has " + eosMessage.length + " elements (expected 4)");
-                        }
-                        var _ = eosMessage[0],
-                            statusCode = eosMessage[1],
-                            headers = eosMessage[2],
-                            info = eosMessage[3];
-                        if (typeof statusCode !== "number") {
-                            return new Error("Invalid EOS Status Code");
-                        }
-                        if (typeof headers !== "object" || Array.isArray(headers)) {
-                            return new Error("Invalid EOS Headers");
-                        }
-                        this.state = SubscriptionState.ENDING;
-                        return new base_client_1.ErrorResponse(statusCode, headers, info);
-                    };
-                    /******
-                    Utility methods
-                    ******/
-                    /**
-                    * Asserts whether this subscription falls in one of the expected states and logs a warning if it's not.
-                    * @param validStates Array of possible states this subscription could be in.
-                    */
-                    BaseSubscription.prototype.assertStateIsIn = function () {
-                        var _this = this;
-                        var validStates = [];
-                        for (var _i = 0; _i < arguments.length; _i++) {
-                            validStates[_i] = arguments[_i];
-                        }
-                        var stateIsValid = validStates.some(function (validState) {
-                            return validState === _this.state;
-                        });
-                        if (!stateIsValid) {
-                            var expectedStates = validStates.map(function (state) {
-                                return SubscriptionState[state];
-                            }).join(', ');
-                            var actualState = SubscriptionState[this.state];
-                            this.options.logger.warn("Expected this.state to be one of [" + expectedStates + "] but it is " + actualState);
-                        }
-                    };
-                    /**
-                    * Check if a single subscription message is in the right format.
-                    * @param message The message to check.
-                    * @returns null or error if the message is wrong.
-                    */
-                    BaseSubscription.prototype.verifyMessage = function (message) {
-                        if (this.gotEOS) {
-                            return new Error("Got another message after EOS message");
-                        }
-                        if (!Array.isArray(message)) {
-                            return new Error("Message is not an array");
-                        }
-                        if (message.length < 1) {
-                            return new Error("Message is empty array");
-                        }
-                    };
-                    return BaseSubscription;
-                }();
-                exports.BaseSubscription = BaseSubscription;
+                };
 
                 /***/
             },
@@ -943,18 +903,279 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
 
                 "use strict";
 
-                var __assign = this && this.__assign || Object.assign || function (t) {
-                    for (var s, i = 1, n = arguments.length; i < n; i++) {
-                        s = arguments[i];
-                        for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p)) t[p] = s[p];
-                    }
-                    return t;
-                };
                 Object.defineProperty(exports, "__esModule", { value: true });
-                var base_client_1 = __webpack_require__(0);
-                var logger_1 = __webpack_require__(1);
+                var retry_strategy_1 = __webpack_require__(2);
+                var network_1 = __webpack_require__(0);
+                exports.createRetryingStrategy = function (retryOptions, nextSubscribeStrategy, logger) {
+                    retryOptions = retry_strategy_1.createRetryStrategyOptionsOrDefault(retryOptions);
+                    var retryResolution = new retry_strategy_1.RetryResolution(retryOptions, logger);
+                    var RetryingSubscription = /** @class */function () {
+                        function RetryingSubscription(listeners, headers) {
+                            var _this = this;
+                            this.onTransition = function (newState) {
+                                _this.state = newState;
+                            };
+                            this.unsubscribe = function () {
+                                _this.state.unsubscribe();
+                            };
+                            var OpeningSubscriptionState = /** @class */function () {
+                                function OpeningSubscriptionState(onTransition) {
+                                    var _this = this;
+                                    logger.verbose("RetryingSubscription: transitioning to OpeningSubscriptionState");
+                                    this.underlyingSubscription = nextSubscribeStrategy({
+                                        onOpen: function (headers) {
+                                            return onTransition(new OpenSubscriptionState(headers, _this.underlyingSubscription, onTransition));
+                                        },
+                                        onRetrying: listeners.onRetrying,
+                                        onError: function (error) {
+                                            return onTransition(new RetryingSubscriptionState(error, onTransition));
+                                        },
+                                        onEvent: listeners.onEvent,
+                                        onEnd: function (error) {
+                                            return onTransition(new EndedSubscriptionState(error));
+                                        }
+                                    }, headers);
+                                }
+                                OpeningSubscriptionState.prototype.unsubscribe = function () {
+                                    this.underlyingSubscription.unsubscribe();
+                                    throw new Error("Method not implemented.");
+                                };
+                                return OpeningSubscriptionState;
+                            }();
+                            var RetryingSubscriptionState = /** @class */function () {
+                                function RetryingSubscriptionState(error, onTransition) {
+                                    var _this = this;
+                                    this.onTransition = onTransition;
+                                    logger.verbose("RetryingSubscription: transitioning to RetryingSubscriptionState");
+                                    var executeSubscriptionOnce = function (error) {
+                                        listeners.onRetrying();
+                                        var resolveError = function (error) {
+                                            if (error instanceof network_1.ErrorResponse) {
+                                                error.headers["Request-Method"] = "SUBSCRIBE";
+                                            }
+                                            return retryResolution.attemptRetry(error);
+                                        };
+                                        var errorResolution = resolveError(error);
+                                        if (errorResolution instanceof retry_strategy_1.Retry) {
+                                            _this.timeout = window.setTimeout(function () {
+                                                executeNextSubscribeStrategy();
+                                            }, errorResolution.waitTimeMillis);
+                                        } else {
+                                            onTransition(new FailedSubscriptionState(error));
+                                        }
+                                    };
+                                    var executeNextSubscribeStrategy = function () {
+                                        logger.verbose("RetryingSubscription: trying to re-establish the subscription");
+                                        var underlyingSubscription = nextSubscribeStrategy({
+                                            onOpen: function (headers) {
+                                                return onTransition(new OpenSubscriptionState(headers, underlyingSubscription, onTransition));
+                                            },
+                                            onRetrying: listeners.onRetrying,
+                                            onError: function (error) {
+                                                return executeSubscriptionOnce(error);
+                                            },
+                                            onEvent: listeners.onEvent,
+                                            onEnd: function (error) {
+                                                return onTransition(new EndedSubscriptionState(error));
+                                            }
+                                        }, headers);
+                                    };
+                                    executeSubscriptionOnce(error);
+                                }
+                                RetryingSubscriptionState.prototype.unsubscribe = function () {
+                                    window.clearTimeout(this.timeout);
+                                    this.onTransition(new EndedSubscriptionState());
+                                };
+                                return RetryingSubscriptionState;
+                            }();
+                            var OpenSubscriptionState = /** @class */function () {
+                                function OpenSubscriptionState(headers, underlyingSubscription, onTransition) {
+                                    this.underlyingSubscription = underlyingSubscription;
+                                    this.onTransition = onTransition;
+                                    listeners.onOpen(headers);
+                                    logger.verbose("RetryingSubscription: transitioning to OpenSubscriptionState");
+                                }
+                                OpenSubscriptionState.prototype.unsubscribe = function () {
+                                    this.underlyingSubscription.unsubscribe();
+                                    this.onTransition(new EndedSubscriptionState());
+                                };
+                                return OpenSubscriptionState;
+                            }();
+                            var EndedSubscriptionState = /** @class */function () {
+                                function EndedSubscriptionState(error) {
+                                    logger.verbose("RetryingSubscription: transitioning to EndedSubscriptionState");
+                                    listeners.onEnd(error);
+                                }
+                                EndedSubscriptionState.prototype.unsubscribe = function () {
+                                    throw new Error("Subscription has already ended");
+                                };
+                                return EndedSubscriptionState;
+                            }();
+                            var FailedSubscriptionState = /** @class */function () {
+                                function FailedSubscriptionState(error) {
+                                    logger.verbose("RetryingSubscription: transitioning to FailedSubscriptionState", error);
+                                    listeners.onError(error);
+                                }
+                                FailedSubscriptionState.prototype.unsubscribe = function () {
+                                    throw new Error("Subscription has already ended");
+                                };
+                                return FailedSubscriptionState;
+                            }();
+                            this.state = new OpeningSubscriptionState(this.onTransition);
+                        }
+                        return RetryingSubscription;
+                    }();
+                    return function (listeners, headers) {
+                        return new RetryingSubscription(listeners, headers);
+                    };
+                };
+
+                /***/
+            },
+            /* 8 */
+            /***/function (module, exports, __webpack_require__) {
+
+                "use strict";
+
+                Object.defineProperty(exports, "__esModule", { value: true });
+                var network_1 = __webpack_require__(0);
+                exports.createTokenProvidingStrategy = function (tokenProvider, nextSubscribeStrategy, logger) {
+                    var TokenProvidingSubscription = /** @class */function () {
+                        function TokenProvidingSubscription(listeners, headers) {
+                            var _this = this;
+                            this.onTransition = function (newState) {
+                                _this.state = newState;
+                            };
+                            this.unsubscribe = function () {
+                                _this.state.unsubscribe();
+                            };
+                            var TokenProvidingState = /** @class */function () {
+                                function TokenProvidingState(onTransition) {
+                                    var _this = this;
+                                    this.onTransition = onTransition;
+                                    logger.verbose("TokenProvidingSubscription: transitioning to TokenProvidingState");
+                                    var isTokenExpiredError = function (error) {
+                                        return error instanceof network_1.ErrorResponse && error.statusCode === 401 && error.info === "authentication/expired";
+                                    };
+                                    var fetchTokenAndExecuteSubscription = function () {
+                                        _this.tokenPromise = tokenProvider.fetchToken().then(function (token) {
+                                            _this.putTokenIntoHeader(token);
+                                            _this.underlyingSubscription = nextSubscribeStrategy({
+                                                onOpen: function (headers) {
+                                                    onTransition(new OpenSubscriptionState(headers, _this.underlyingSubscription, onTransition));
+                                                },
+                                                onRetrying: listeners.onRetrying,
+                                                onError: function (error) {
+                                                    if (isTokenExpiredError(error)) {
+                                                        tokenProvider.clearToken(token);
+                                                        fetchTokenAndExecuteSubscription();
+                                                    } else {
+                                                        onTransition(new FailedSubscriptionState(error));
+                                                    }
+                                                },
+                                                onEvent: listeners.onEvent,
+                                                onEnd: function (error) {
+                                                    onTransition(new EndedSubscriptionState(error));
+                                                }
+                                            }, headers);
+                                        }).catch(function (error) {
+                                            (function (error) {
+                                                onTransition(new FailedSubscriptionState(error));
+                                            });
+                                        });
+                                    };
+                                    fetchTokenAndExecuteSubscription();
+                                }
+                                TokenProvidingState.prototype.unsubscribe = function () {
+                                    if (this.tokenPromise) this.tokenPromise.cancel();
+                                    this.underlyingSubscription.unsubscribe();
+                                    this.onTransition(new EndedSubscriptionState());
+                                };
+                                TokenProvidingState.prototype.putTokenIntoHeader = function (token) {
+                                    if (token) {
+                                        headers['Authorization'] = "Bearer " + token;
+                                        logger.verbose("TokenProvidingSubscription: token fetched: " + token);
+                                    }
+                                };
+                                return TokenProvidingState;
+                            }();
+                            var OpenSubscriptionState = /** @class */function () {
+                                function OpenSubscriptionState(headers, underlyingSubscription, onTransition) {
+                                    this.underlyingSubscription = underlyingSubscription;
+                                    this.onTransition = onTransition;
+                                    logger.verbose("TokenProvidingSubscription: transitioning to OpenSubscriptionState");
+                                    listeners.onOpen(headers);
+                                }
+                                OpenSubscriptionState.prototype.unsubscribe = function () {
+                                    this.underlyingSubscription.unsubscribe();
+                                    this.onTransition(new EndedSubscriptionState());
+                                };
+                                return OpenSubscriptionState;
+                            }();
+                            var FailedSubscriptionState = /** @class */function () {
+                                function FailedSubscriptionState(error) {
+                                    logger.verbose("TokenProvidingSubscription: transitioning to FailedSubscriptionState", error);
+                                    listeners.onError(error);
+                                }
+                                FailedSubscriptionState.prototype.unsubscribe = function () {
+                                    throw new Error("Subscription has already ended");
+                                };
+                                return FailedSubscriptionState;
+                            }();
+                            var EndedSubscriptionState = /** @class */function () {
+                                function EndedSubscriptionState(error) {
+                                    logger.verbose("TokenProvidingSubscription: transitioning to EndedSubscriptionState");
+                                    listeners.onEnd(error);
+                                }
+                                EndedSubscriptionState.prototype.unsubscribe = function () {
+                                    throw new Error("Subscription has already ended");
+                                };
+                                return EndedSubscriptionState;
+                            }();
+                            this.state = new TokenProvidingState(this.onTransition);
+                        }
+                        return TokenProvidingSubscription;
+                    }();
+                    //Token provider might not be there. If missing, go straight to the underlying subscribe strategy
+                    if (tokenProvider) {
+                        return function (listeners, headers) {
+                            return new TokenProvidingSubscription(listeners, headers);
+                        };
+                    } else {
+                        return function (listeners, headers) {
+                            return nextSubscribeStrategy(listeners, headers);
+                        };
+                    }
+                };
+
+                /***/
+            },
+            /* 9 */
+            /***/function (module, exports, __webpack_require__) {
+
+                "use strict";
+
+                Object.defineProperty(exports, "__esModule", { value: true });
+                var base_subscription_1 = __webpack_require__(1);
+                exports.createH2TransportStrategy = function (requestFactory, logger) {
+                    var strategy = function (listeners, headers) {
+                        return new base_subscription_1.BaseSubscription(requestFactory(headers), logger, listeners.onOpen, listeners.onError, listeners.onEvent, listeners.onEnd);
+                    };
+                    return strategy;
+                };
+
+                /***/
+            },
+            /* 10 */
+            /***/function (module, exports, __webpack_require__) {
+
+                "use strict";
+
+                Object.defineProperty(exports, "__esModule", { value: true });
+                var base_client_1 = __webpack_require__(3);
+                var logger_1 = __webpack_require__(4);
                 var HOST_BASE = "pusherplatform.io";
-                var Instance = function () {
+                var Instance = /** @class */function () {
                     function Instance(options) {
                         if (!options.instanceId) throw new Error('Expected `instanceId` property in Instance options!');
                         if (options.instanceId.split(":").length !== 3) throw new Error('The instance property is in the wrong format!');
@@ -974,32 +1195,24 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
                             logger: this.logger
                         });
                     }
-                    Instance.prototype.request = function (options) {
-                        var _this = this;
+                    Instance.prototype.request = function (options, tokenProvider, tokenParams) {
                         options.path = this.absPath(options.path);
-                        if (!options.logger) options.logger = this.logger;
-                        if (!options.jwt && options.tokenProvider) {
-                            return options.tokenProvider.fetchToken().then(function (jwt) {
-                                return _this.client.request(__assign({ jwt: jwt }, options));
-                            });
-                        } else {
-                            return this.client.request(options);
+                        if (options.headers == null || options.headers == undefined) {
+                            options.headers = {};
                         }
+                        return this.client.request(options, tokenProvider, tokenParams);
                     };
-                    Instance.prototype.subscribe = function (options) {
-                        this.logger.verbose("Starting to statelessly subscribe");
-                        options.path = this.absPath(options.path);
-                        if (!options.logger) options.logger = this.logger;
-                        var subscription = this.client.newStatelessSubscription(__assign({}, options));
-                        subscription.open();
-                        return subscription;
+                    Instance.prototype.subscribeNonResuming = function (options) {
+                        var headers = options.headers || {};
+                        var retryStrategyOptions = options.retryStrategyOptions || {};
+                        var tokenProvider = options.tokenProvider;
+                        return this.client.subscribeNonResuming(this.absPath(options.path), headers, options.listeners, retryStrategyOptions, tokenProvider);
                     };
-                    Instance.prototype.resumableSubscribe = function (options) {
-                        options.path = this.absPath(options.path);
-                        if (!options.logger) options.logger = this.logger;
-                        var resumableSubscription = this.client.newResumableSubscription(__assign({}, options));
-                        resumableSubscription.open();
-                        return resumableSubscription;
+                    Instance.prototype.subscribeResuming = function (options) {
+                        var headers = options.headers || {};
+                        var retryStrategyOptions = options.retryStrategyOptions || {};
+                        var tokenProvider = options.tokenProvider;
+                        return this.client.subscribeResuming(this.absPath(options.path), headers, options.listeners, retryStrategyOptions, options.initialEventId, tokenProvider);
                     };
                     Instance.prototype.absPath = function (relativePath) {
                         return ("/services/" + this.serviceName + "/" + this.serviceVersion + "/" + this.id + "/" + relativePath).replace(/\/+/g, "/").replace(/\/+$/, "");
@@ -1010,37 +1223,170 @@ var pusherPlatform = createCommonjsModule(function (module, exports) {
 
                 /***/
             },
-            /* 8 */
+            /* 11 */
+            /***/function (module, exports, __webpack_require__) {
+
+                "use strict";
+
+                class CancelError extends Error {
+                    constructor() {
+                        super('Promise was canceled');
+                        this.name = 'CancelError';
+                    }
+                }
+
+                class PCancelable {
+                    static fn(fn) {
+                        return function () {
+                            const args = [].slice.apply(arguments);
+                            return new PCancelable((onCancel, resolve, reject) => {
+                                args.unshift(onCancel);
+                                fn.apply(null, args).then(resolve, reject);
+                            });
+                        };
+                    }
+
+                    constructor(executor) {
+                        this._pending = true;
+                        this._canceled = false;
+
+                        this._promise = new Promise((resolve, reject) => {
+                            this._reject = reject;
+
+                            return executor(fn => {
+                                this._cancel = fn;
+                            }, val => {
+                                this._pending = false;
+                                resolve(val);
+                            }, err => {
+                                this._pending = false;
+                                reject(err);
+                            });
+                        });
+                    }
+
+                    then() {
+                        return this._promise.then.apply(this._promise, arguments);
+                    }
+
+                    catch() {
+                        return this._promise.catch.apply(this._promise, arguments);
+                    }
+
+                    cancel() {
+                        if (!this._pending || this._canceled) {
+                            return;
+                        }
+
+                        if (typeof this._cancel === 'function') {
+                            try {
+                                this._cancel();
+                            } catch (err) {
+                                this._reject(err);
+                            }
+                        }
+
+                        this._canceled = true;
+                        this._reject(new CancelError());
+                    }
+
+                    get canceled() {
+                        return this._canceled;
+                    }
+                }
+
+                Object.setPrototypeOf(PCancelable.prototype, Promise.prototype);
+
+                module.exports = PCancelable;
+                module.exports.CancelError = CancelError;
+
+                /***/
+            },
+            /* 12 */
             /***/function (module, exports, __webpack_require__) {
 
                 "use strict";
 
                 Object.defineProperty(exports, "__esModule", { value: true });
-                var token_provider_1 = __webpack_require__(2);
-                exports.FixedTokenProvider = token_provider_1.FixedTokenProvider;
-                exports.RetryingTokenProvider = token_provider_1.RetryingTokenProvider;
-                exports.NoOpTokenProvider = token_provider_1.NoOpTokenProvider;
-                var instance_1 = __webpack_require__(7);
+                var transports_1 = __webpack_require__(9);
+                exports.createH2TransportStrategy = transports_1.createH2TransportStrategy;
+                var request_1 = __webpack_require__(5);
+                exports.executeNetworkRequest = request_1.executeNetworkRequest;
+                var resuming_subscription_1 = __webpack_require__(6);
+                exports.createResumingStrategy = resuming_subscription_1.createResumingStrategy;
+                var retry_strategy_1 = __webpack_require__(2);
+                exports.createRetryStrategyOptionsOrDefault = retry_strategy_1.createRetryStrategyOptionsOrDefault;
+                exports.DoNotRetry = retry_strategy_1.DoNotRetry;
+                exports.Retry = retry_strategy_1.Retry;
+                exports.RetryResolution = retry_strategy_1.RetryResolution;
+                var instance_1 = __webpack_require__(10);
                 exports.Instance = instance_1.default;
-                var base_client_1 = __webpack_require__(0);
+                var base_client_1 = __webpack_require__(3);
                 exports.BaseClient = base_client_1.BaseClient;
-                var logger_1 = __webpack_require__(1);
+                var logger_1 = __webpack_require__(4);
                 exports.ConsoleLogger = logger_1.ConsoleLogger;
                 exports.EmptyLogger = logger_1.EmptyLogger;
-                var resumable_subscription_1 = __webpack_require__(3);
-                exports.ResumableSubscription = resumable_subscription_1.ResumableSubscription;
-                var stateless_subscription_1 = __webpack_require__(5);
-                exports.StatelessSubscription = stateless_subscription_1.StatelessSubscription;
-                var retry_strategy_1 = __webpack_require__(4);
-                exports.ExponentialBackoffRetryStrategy = retry_strategy_1.ExponentialBackoffRetryStrategy;
+                var retrying_subscription_1 = __webpack_require__(7);
+                exports.createRetryingStrategy = retrying_subscription_1.createRetryingStrategy;
+                var token_providing_subscription_1 = __webpack_require__(8);
+                exports.createTokenProvidingStrategy = token_providing_subscription_1.createTokenProvidingStrategy;
+                var base_subscription_1 = __webpack_require__(1);
+                exports.BaseSubscription = base_subscription_1.BaseSubscription;
+                exports.BaseSubscriptionState = base_subscription_1.BaseSubscriptionState;
+                var network_1 = __webpack_require__(0);
+                exports.ErrorResponse = network_1.ErrorResponse;
+                exports.NetworkError = network_1.NetworkError;
+                exports.responseToHeadersObject = network_1.responseToHeadersObject;
+                exports.XhrReadyState = network_1.XhrReadyState;
                 exports.default = {
                     Instance: instance_1.default,
                     BaseClient: base_client_1.BaseClient,
-                    ResumableSubscription: resumable_subscription_1.ResumableSubscription,
-                    StatelessSubscription: stateless_subscription_1.StatelessSubscription,
-                    ExponentialBackoffRetryStrategy: retry_strategy_1.ExponentialBackoffRetryStrategy,
-                    ConsoleLogger: logger_1.ConsoleLogger, EmptyLogger: logger_1.EmptyLogger,
-                    NoOpTokenProvider: token_provider_1.NoOpTokenProvider, RetryingTokenProvider: token_provider_1.RetryingTokenProvider, FixedTokenProvider: token_provider_1.FixedTokenProvider
+                    ConsoleLogger: logger_1.ConsoleLogger, EmptyLogger: logger_1.EmptyLogger
+                };
+
+                /***/
+            },
+            /* 13 */
+            /***/function (module, exports, __webpack_require__) {
+
+                "use strict";
+
+                Object.defineProperty(exports, "__esModule", { value: true });
+                exports.subscribeStrategyListenersFromSubscriptionListeners = function (subListeners) {
+                    return {
+                        onOpen: subListeners.onOpen,
+                        onRetrying: subListeners.onRetrying,
+                        onError: subListeners.onError,
+                        onEvent: subListeners.onEvent,
+                        onEnd: subListeners.onEnd
+                    };
+                };
+
+                /***/
+            },
+            /* 14 */
+            /***/function (module, exports, __webpack_require__) {
+
+                "use strict";
+
+                Object.defineProperty(exports, "__esModule", { value: true });
+                //Move this util somewhere else?
+                var noop = function (arg) {};
+                exports.replaceMissingListenersWithNoOps = function (listeners) {
+                    var onOpen = listeners.onOpen || noop;
+                    var onSubscribe = listeners.onSubscribe || noop;
+                    var onEvent = listeners.onEvent || noop;
+                    var onError = listeners.onError || noop;
+                    var onEnd = listeners.onEnd || noop;
+                    var onRetrying = listeners.onRetrying || noop;
+                    return {
+                        onOpen: onOpen,
+                        onSubscribe: onSubscribe,
+                        onRetrying: onRetrying,
+                        onEvent: onEvent,
+                        onError: onError,
+                        onEnd: onEnd
+                    };
                 };
 
                 /***/
@@ -1185,14 +1531,20 @@ var Feed = function () {
           throw new TypeError("Unsupported event type '" + event.body.type + "'");
         }
       };
-      return this.instance.resumableSubscribe(_extends({}, options, {
+      return this.instance.subscribeResuming(_extends({}, options, {
         // Mapping our itemId to platform library eventId
-        lastEventId: options.lastItemId,
+        initialEventId: options.lastItemId,
         path: "feeds/" + this.feedId + "/items" + queryString({
           previous_items: options.previousItems
         }),
         tokenProvider: this.readTokenProvider,
-        onEvent: onEvent
+        listeners: {
+          onEvent: onEvent,
+          onSubscribe: options.onSubscribe,
+          onRetrying: options.onRetrying,
+          onError: options.onError,
+          onEnd: options.onEnd
+        }
       }));
     }
   }, {
@@ -1208,9 +1560,8 @@ var Feed = function () {
         path: "feeds/" + this.feedId + "/items" + queryString({
           cursor: cursor,
           limit: limit
-        }),
-        tokenProvider: this.readTokenProvider
-      }));
+        })
+      }, this.readTokenProvider));
     }
   }]);
   return Feed;
@@ -1336,9 +1687,8 @@ var Feeds = function () {
 
       return parseResponse(this.instance.request({
         method: "GET",
-        path: "feeds" + queryString({ prefix: prefix, limit: limit }),
-        tokenProvider: this.listTokenProvider
-      }));
+        path: "feeds" + queryString({ prefix: prefix, limit: limit })
+      }, this.listTokenProvider));
     }
   }, {
     key: "feed",
@@ -1381,10 +1731,16 @@ var Feeds = function () {
           throw new TypeError("Unsupported firehose event type '" + event.body.type + "'");
         }
       };
-      return this.instance.subscribe(_extends({}, options, {
-        onEvent: onEvent,
+      return this.instance.subscribeNonResuming(_extends({}, options, {
         path: "firehose/items",
-        tokenProvider: this.firehoseTokenProvider
+        tokenProvider: this.firehoseTokenProvider,
+        listeners: {
+          onEvent: onEvent,
+          onOpen: options.onOpen,
+          onSubscribe: options.onSubscribe,
+          onError: options.onError,
+          onEnd: options.onEnd
+        }
       }));
     }
   }]);

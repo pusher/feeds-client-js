@@ -25,15 +25,21 @@ export default class Feed {
         }'`);
       }
     };
-    return this.instance.resumableSubscribe({
+    return this.instance.subscribeResuming({
       ...options,
       // Mapping our itemId to platform library eventId
-      lastEventId: options.lastItemId,
+      initialEventId: options.lastItemId,
       path: `feeds/${ this.feedId }/items` + queryString({
         previous_items: options.previousItems,
       }),
       tokenProvider: this.readTokenProvider,
-      onEvent,
+      listeners: {
+        onEvent,
+        onSubscribe: options.onSubscribe,
+        onRetrying: options.onRetrying,
+        onError: options.onError,
+        onEnd: options.onEnd,
+      }
     });
   }
 
@@ -44,7 +50,6 @@ export default class Feed {
         cursor,
         limit,
       }),
-      tokenProvider: this.readTokenProvider,
-    }));
+    }, this.readTokenProvider));
   }
 }

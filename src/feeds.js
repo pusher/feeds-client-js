@@ -47,8 +47,7 @@ export default class Feeds {
     return parseResponse(this.instance.request({
       method: "GET",
       path: "feeds" + queryString({ prefix, limit }),
-      tokenProvider: this.listTokenProvider,
-    }));
+    }, this.listTokenProvider));
   }
 
   feed(feedId) {
@@ -85,11 +84,17 @@ export default class Feeds {
         }'`);
       }
     };
-    return this.instance.subscribe({
+    return this.instance.subscribeNonResuming({
       ...options,
-      onEvent,
       path: "firehose/items",
       tokenProvider: this.firehoseTokenProvider,
+      listeners: {
+        onEvent,
+        onOpen: options.onOpen,
+        onSubscribe: options.onSubscribe,
+        onError: options.onError,
+        onEnd: options.onEnd,
+      }
     });
   }
 }
