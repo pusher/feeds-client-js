@@ -1730,9 +1730,9 @@ punycode@^1.4.1:
   version "1.4.1"
   resolved "https://registry.yarnpkg.com/punycode/-/punycode-1.4.1.tgz#c0d5a63b2718800ad8e1eb0fa5269c84dd41845e"
 
-pusher-platform@^0.9.2:
-  version "0.9.2"
-  resolved "https://registry.yarnpkg.com/pusher-platform/-/pusher-platform-0.9.2.tgz#3a6b1056e4b1dc424e3c3fcc6cf1bcc1b23cbc69"
+pusher-platform@^0.11.0:
+  version "0.11.0"
+  resolved "https://registry.yarnpkg.com/pusher-platform/-/pusher-platform-0.11.0.tgz#add1d3d3115e9294e16bffa413a3559ddd5df383"
   dependencies:
     jwt-simple "^0.5.1"
     p-cancelable "^0.3.0"

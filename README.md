@@ -26,7 +26,7 @@ In a script tag:
 The constructor `Feeds` takes a single options object with the following
 properties.
 
-- `instanceId`: [required] get this from [your
+- `instanceLocator`: [required] get this from [your
   dashboard](https://dash.pusher.com)
 
 - `authEndpiont`: [optional] the endpoint to use to request tokens for access
@@ -55,7 +55,7 @@ interface Logger {
 ### Example
 
 ```js
-const feeds = new Feeds({ instanceId: your_instance_id });
+const feeds = new Feeds({ instanceLocator: your_instance_locator });
 ```
 
 ## Get a reference to a feed
