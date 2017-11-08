@@ -9,7 +9,7 @@ export default class Feeds {
     authData = {},
     authEndpoint,
     host,
-    instanceId,
+    instanceLocator,
     logLevel,
     logger,
   } = {}) {
@@ -36,7 +36,7 @@ export default class Feeds {
     }
     this.instance = new PusherPlatform.Instance({
       host,
-      instanceId,
+      locator: instanceLocator,
       logger,
       serviceName: "feeds",
       serviceVersion: "v1",
@@ -54,14 +54,15 @@ export default class Feeds {
     if (!feedId || !feedId.match(feedIdRegex)) {
       throw new TypeError(`Invalid feedId: ${ feedId }`);
     }
-    const readTokenProvider = feedId.startsWith("private-") ? new TokenProvider({
-      authEndpoint: this.authEndpoint,
-      authData: {
-        ...this.authData,
-        path: `feeds/${ feedId }/items`,
-        action: "READ",
-      }
-    }) : null;
+    const readTokenProvider =
+      feedId.startsWith("private-") ? new TokenProvider({
+        authEndpoint: this.authEndpoint,
+        authData: {
+          ...this.authData,
+          path: `feeds/${ feedId }/items`,
+          action: "READ",
+        }
+      }) : null;
     return new Feed({
       instance: this.instance,
       feedId,
