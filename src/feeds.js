@@ -7,7 +7,7 @@ import { parseResponse, queryString } from "./utils";
 export default class Feeds {
   constructor({
     authData = {},
-    authEndpoint,
+    authEndpoint = "/feeds/tokens",
     host,
     instanceLocator,
     logLevel,
