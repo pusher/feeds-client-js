@@ -50,6 +50,7 @@ export default class Feed {
         cursor,
         limit,
       }),
-    }, this.readTokenProvider));
+      tokenProvider: this.readTokenProvider,
+    }));
   }
 }
