@@ -12,13 +12,13 @@ here](https://docs.pusher.com/feeds)
 [yarn](https://yarnpkg.com/):
 
 ```sh
-$ yarn add pusher-feeds-client
+$ yarn add @pusher/feeds
 ```
 
 In a script tag:
 
 ```html
-<script src="https://unpkg.com/pusher-feeds-client"></script>
+<script src="https://unpkg.com/@pusher/feeds"></script>
 ```
 
 ## Instantiate a Feeds object
