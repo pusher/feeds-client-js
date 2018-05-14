@@ -47,7 +47,8 @@ export default class Feeds {
     return parseResponse(this.instance.request({
       method: "GET",
       path: "feeds" + queryString({ prefix, limit }),
-    }, this.listTokenProvider));
+      tokenProvider: this.listTokenProvider,
+    }));
   }
 
   feed(feedId) {
