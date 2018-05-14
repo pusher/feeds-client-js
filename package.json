@@ -1,5 +1,5 @@
 {
-  "name": "pusher-feeds-client",
+  "name": "@pusher/feeds",
   "description": "Pusher Feeds client library for the web",
   "main": "target/pusher-feeds-client.js",
   "author": "Pusher",
@@ -31,5 +31,5 @@
     "lint": "yarn eslint src",
     "dev": "fd . src | entr -s 'echo \"\n...\" && yarn lint && yarn build'"
   },
-  "version": "0.10.0"
+  "version": "0.10.1"
 }

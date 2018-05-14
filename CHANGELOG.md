@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.10.1 -- 2017-05-14
+
+## Changed
+- Remove dependency on p-cancelable to satisfy uglify
+
 ## 0.10.0 -- 2017-11-08
 ### Changed
 - Rename the constructor option `instanceId` to `instanceLocator`.
